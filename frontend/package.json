@@ -1,0 +1,7 @@
+{
+  "name": "innersync-ai-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "InnerSync AI data-collection and delivery layer (chat, questionnaire, dashboard). Deferred to PROJECT_ROADMAP.md Phase 7.",
+  "scripts": {}
+}

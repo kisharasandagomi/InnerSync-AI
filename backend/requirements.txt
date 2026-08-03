@@ -1,0 +1,4 @@
+# Backend (Production World) dependencies.
+# Populated when backend implementation begins (PROJECT_ROADMAP.md Phase 6).
+# Mirrors the relevant subset of environment.yml's pip section for the
+# containerized backend build.

@@ -1,0 +1,36 @@
+# --- Research World data & artifacts (never commit datasets or trained models) ---
+ml_pipeline/datasets/
+ml_pipeline/artifacts/
+*.pkl
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+venv/
+.venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Node / frontend ---
+node_modules/
+dist/
+build/
+.vite/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Logs ---
+*.log
