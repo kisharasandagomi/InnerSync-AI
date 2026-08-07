@@ -56,3 +56,44 @@ difficulty — consistent with the DMP's existing provenance caveat
 ("self-reported, crowd-sourced, no verifiable physical corroboration") but
 going further than that caveat currently states. This should be addressed
 explicitly in the results/limitations chapter, not left implicit.
+
+## Handling the risk of inflated apparent performance
+
+This section states, in advance, how this project will handle the risk
+raised above — that this dataset's unusually clean correlation structure
+could produce apparent model performance that overstates real-world
+predictive difficulty.
+
+**1. Explicit comparison against the literature review's accuracy range.**
+When final model results are reported (Phase 2 comparative evaluation and
+Phase 8 write-up), accuracy will be stated alongside the range already
+established in Chapter 2's literature review: 63–99% across the 17 reviewed
+studies, where the single study reporting ~99% accuracy was itself flagged
+in that review as a likely overfitting/leakage case (single-institution
+data, no external validation). If this project's model also lands at the
+high end of that range, that will be stated directly in the results text and
+explicitly connected back to this EDA/VIF finding — not left for a reader
+to notice unprompted or buried in an appendix.
+
+**2. Field-wide evidence, not just this project's own result.** The
+Frontiers (2026) source already cited in Chapter 2 found this same pattern
+field-wide: studies validated on a single dataset systematically report
+inflated apparent performance compared to studies validated across multiple
+independent datasets. That finding applies directly here — it is the reason
+a single high accuracy number from `student_stress_factors.csv` alone cannot
+be treated as evidence of real-world predictive validity, independent of
+whatever this project's own model happens to score.
+
+**3. The actual mitigation is external validation, not a preprocessing fix.**
+VIF and correlation analysis are diagnostic, not corrective, for this
+specific risk — dropping or transforming correlated features would not make
+the underlying dataset less cleanly-separable, and doing so purely to lower
+an accuracy number would be manufacturing a worse model for cosmetic
+reasons, not a defensible methodological choice. The actual mitigation was
+already part of the design before this finding: the locally-collected
+questionnaire + conversational check-in data (Phase 8, external/held-out
+validation set, see `data_management_plan.md`) exists specifically to test
+whether performance holds up on data this project did not train on and that
+was not subject to whatever produced this dataset's unusually clean
+structure. That validation step is the answer to this risk; this section
+documents the reasoning, it does not introduce a new plan.
