@@ -1,0 +1,57 @@
+{
+  "timestamp_utc": "20260815T051616Z",
+  "experiment_name": "baseline_logistic_regression",
+  "model": "LogisticRegression",
+  "hyperparameters": {
+    "C": 1.0,
+    "class_weight": null,
+    "dual": false,
+    "fit_intercept": true,
+    "intercept_scaling": 1,
+    "l1_ratio": 0.0,
+    "max_iter": 1000,
+    "n_jobs": null,
+    "penalty": "deprecated",
+    "random_state": 42,
+    "solver": "lbfgs",
+    "tol": 0.0001,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "dataset": {
+    "path": "../datasets/raw/student_stress_factors.csv",
+    "sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed"
+  },
+  "split": {
+    "test_size": 0.2,
+    "stratify": true,
+    "random_state": 42,
+    "train_rows": 880,
+    "test_rows": 220
+  },
+  "metrics": {
+    "accuracy": 0.8818181818181818,
+    "balanced_accuracy": 0.8821321321321322,
+    "precision_macro": 0.8818338886832038,
+    "recall_macro": 0.8821321321321322,
+    "f1_macro": 0.8819553543691475,
+    "confusion_matrix": [
+      [
+        63,
+        5,
+        6
+      ],
+      [
+        3,
+        66,
+        3
+      ],
+      [
+        7,
+        2,
+        65
+      ]
+    ],
+    "roc_auc_macro_ovr": 0.9851345352201517
+  }
+}

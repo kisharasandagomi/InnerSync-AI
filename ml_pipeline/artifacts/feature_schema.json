@@ -1,0 +1,164 @@
+{
+  "model_version": "v1",
+  "target": {
+    "name": "stress_level",
+    "classes": [
+      0,
+      1,
+      2
+    ],
+    "class_meaning": {
+      "0": "low",
+      "1": "moderate",
+      "2": "high"
+    }
+  },
+  "n_features": 20,
+  "features": [
+    {
+      "name": "anxiety_level",
+      "position": 0,
+      "dtype": "int64",
+      "min": 0,
+      "max": 21
+    },
+    {
+      "name": "self_esteem",
+      "position": 1,
+      "dtype": "int64",
+      "min": 0,
+      "max": 30
+    },
+    {
+      "name": "mental_health_history",
+      "position": 2,
+      "dtype": "int64",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "depression",
+      "position": 3,
+      "dtype": "int64",
+      "min": 0,
+      "max": 27
+    },
+    {
+      "name": "headache",
+      "position": 4,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "blood_pressure",
+      "position": 5,
+      "dtype": "int64",
+      "min": 1,
+      "max": 3
+    },
+    {
+      "name": "sleep_quality",
+      "position": 6,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "breathing_problem",
+      "position": 7,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "noise_level",
+      "position": 8,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "living_conditions",
+      "position": 9,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "safety",
+      "position": 10,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "basic_needs",
+      "position": 11,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "academic_performance",
+      "position": 12,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "study_load",
+      "position": 13,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "teacher_student_relationship",
+      "position": 14,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "future_career_concerns",
+      "position": 15,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "social_support",
+      "position": 16,
+      "dtype": "int64",
+      "min": 0,
+      "max": 3
+    },
+    {
+      "name": "peer_pressure",
+      "position": 17,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "extracurricular_activities",
+      "position": 18,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "bullying",
+      "position": 19,
+      "dtype": "int64",
+      "min": 0,
+      "max": 5
+    }
+  ],
+  "preprocessing": {
+    "scaling": "none \u2014 Random Forest is scale-invariant; features used raw",
+    "encoding": "none \u2014 all features already numeric/ordinal in the source dataset",
+    "imputation": "none \u2014 source dataset has zero missing values"
+  }
+}

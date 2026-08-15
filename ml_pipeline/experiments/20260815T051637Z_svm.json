@@ -1,0 +1,84 @@
+{
+  "timestamp_utc": "20260815T051637Z",
+  "experiment_name": "svm",
+  "model": "CalibratedClassifierCV",
+  "hyperparameters": {
+    "memory": null,
+    "steps": [
+      [
+        "scaler",
+        "StandardScaler()"
+      ],
+      [
+        "svc",
+        "CalibratedClassifierCV(ensemble=False,\n                       estimator=SVC(C=1, kernel='linear', random_state=42))"
+      ]
+    ],
+    "transform_input": null,
+    "verbose": false,
+    "scaler": "StandardScaler()",
+    "svc": "CalibratedClassifierCV(ensemble=False,\n                       estimator=SVC(C=1, kernel='linear', random_state=42))",
+    "scaler__copy": true,
+    "scaler__with_mean": true,
+    "scaler__with_std": true,
+    "svc__cv": null,
+    "svc__ensemble": false,
+    "svc__estimator__C": 1,
+    "svc__estimator__break_ties": false,
+    "svc__estimator__cache_size": 200,
+    "svc__estimator__class_weight": null,
+    "svc__estimator__coef0": 0.0,
+    "svc__estimator__decision_function_shape": "ovr",
+    "svc__estimator__degree": 3,
+    "svc__estimator__gamma": "scale",
+    "svc__estimator__kernel": "linear",
+    "svc__estimator__max_iter": -1,
+    "svc__estimator__probability": "deprecated",
+    "svc__estimator__random_state": 42,
+    "svc__estimator__shrinking": true,
+    "svc__estimator__tol": 0.001,
+    "svc__estimator__verbose": false,
+    "svc__estimator": "SVC(C=1, kernel='linear', random_state=42)",
+    "svc__method": "sigmoid",
+    "svc__n_jobs": null
+  },
+  "dataset": {
+    "path": "../datasets/raw/student_stress_factors.csv",
+    "sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed"
+  },
+  "split": {
+    "test_size": 0.2,
+    "stratify": true,
+    "random_state": 42,
+    "train_rows": 880,
+    "test_rows": 220,
+    "cv_folds": 5,
+    "cv_scoring": "f1_macro",
+    "cv_best_score": 0.8775754650315786
+  },
+  "metrics": {
+    "accuracy": 0.8863636363636364,
+    "balanced_accuracy": 0.8867617617617617,
+    "precision_macro": 0.8868406756642052,
+    "recall_macro": 0.8867617617617617,
+    "f1_macro": 0.886045591323617,
+    "confusion_matrix": [
+      [
+        61,
+        5,
+        8
+      ],
+      [
+        3,
+        67,
+        2
+      ],
+      [
+        4,
+        3,
+        67
+      ]
+    ],
+    "roc_auc_macro_ovr": 0.9245289810358304
+  }
+}

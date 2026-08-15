@@ -1,0 +1,45 @@
+{
+  "model_version": "v1",
+  "created_utc": "2026-08-15T05:16:39Z",
+  "selected_model": "RandomForestClassifier",
+  "selection_rationale_doc": "docs/research/methodology.md \u00a7 Model Selection",
+  "artifacts": {
+    "model": {
+      "filename": "stress_model_v1.pkl",
+      "sha256": "a5f9fe7f57d39318eef33ad293308965936c011964fc43327a35ca70ba274e6f",
+      "committed": false,
+      "note": "gitignored binary; regenerate by re-running 03_ModelTraining.ipynb"
+    },
+    "feature_schema": {
+      "filename": "feature_schema.json",
+      "committed": true
+    }
+  },
+  "training_dataset": {
+    "path": "../datasets/raw/student_stress_factors.csv",
+    "sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed",
+    "rows": 1100
+  },
+  "hyperparameters": {
+    "max_depth": 10,
+    "min_samples_leaf": 1,
+    "min_samples_split": 2,
+    "n_estimators": 100
+  },
+  "validation": {
+    "cv": "StratifiedKFold(n_splits=5, shuffle=True, random_state=42)",
+    "cv_scoring": "f1_macro",
+    "cv_best_score": 0.8808005723071354,
+    "holdout_test_size": 0.2,
+    "holdout_test_rows": 220,
+    "external_validation": "not yet performed \u2014 planned for Phase 8"
+  },
+  "holdout_test_metrics": {
+    "accuracy": 0.8863636363636364,
+    "balanced_accuracy": 0.8867617617617617,
+    "precision_macro": 0.8881673881673882,
+    "recall_macro": 0.8867617617617617,
+    "f1_macro": 0.8860582163440068,
+    "roc_auc_macro_ovr": 0.9843788565963223
+  }
+}

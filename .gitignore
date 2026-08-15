@@ -1,6 +1,16 @@
 # --- Research World data & artifacts (never commit datasets or trained models) ---
 ml_pipeline/datasets/
-ml_pipeline/artifacts/
+
+# Artifacts: ignore the contents (trained model binaries), but keep the small
+# JSON metadata tracked — feature_schema.json is the backend's inference
+# contract, and artifact_manifest.json is the committed record of which model
+# binary was produced, when, and from which dataset hash. Written as
+# `artifacts/*` rather than `artifacts/` because git does not descend into an
+# excluded directory, so a `!` negation inside one would never match.
+ml_pipeline/artifacts/*
+!ml_pipeline/artifacts/feature_schema.json
+!ml_pipeline/artifacts/artifact_manifest.json
+
 *.pkl
 
 # --- Python ---

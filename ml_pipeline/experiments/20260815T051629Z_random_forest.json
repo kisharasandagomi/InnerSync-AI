@@ -1,0 +1,65 @@
+{
+  "timestamp_utc": "20260815T051629Z",
+  "experiment_name": "random_forest",
+  "model": "RandomForestClassifier",
+  "hyperparameters": {
+    "bootstrap": true,
+    "ccp_alpha": 0.0,
+    "class_weight": null,
+    "criterion": "gini",
+    "max_depth": 10,
+    "max_features": "sqrt",
+    "max_leaf_nodes": null,
+    "max_samples": null,
+    "min_impurity_decrease": 0.0,
+    "min_samples_leaf": 1,
+    "min_samples_split": 2,
+    "min_weight_fraction_leaf": 0.0,
+    "monotonic_cst": null,
+    "n_estimators": 100,
+    "n_jobs": null,
+    "oob_score": false,
+    "random_state": 42,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "dataset": {
+    "path": "../datasets/raw/student_stress_factors.csv",
+    "sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed"
+  },
+  "split": {
+    "test_size": 0.2,
+    "stratify": true,
+    "random_state": 42,
+    "train_rows": 880,
+    "test_rows": 220,
+    "cv_folds": 5,
+    "cv_scoring": "f1_macro",
+    "cv_best_score": 0.8808005723071354
+  },
+  "metrics": {
+    "accuracy": 0.8863636363636364,
+    "balanced_accuracy": 0.8867617617617617,
+    "precision_macro": 0.8881673881673882,
+    "recall_macro": 0.8867617617617617,
+    "f1_macro": 0.8860582163440068,
+    "confusion_matrix": [
+      [
+        61,
+        6,
+        7
+      ],
+      [
+        2,
+        67,
+        3
+      ],
+      [
+        3,
+        4,
+        67
+      ]
+    ],
+    "roc_auc_macro_ovr": 0.9843788565963223
+  }
+}

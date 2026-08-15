@@ -97,3 +97,81 @@ whether performance holds up on data this project did not train on and that
 was not subject to whatever produced this dataset's unusually clean
 structure. That validation step is the answer to this risk; this section
 documents the reasoning, it does not introduce a new plan.
+
+## Model Selection — `03_ModelTraining.ipynb`
+
+**Selected model: Random Forest** (`max_depth=10`, `min_samples_leaf=1`,
+`min_samples_split=2`, `n_estimators=100`).
+
+Five models were trained and evaluated on an identical stratified 80/20
+split (880 train / 220 held-out test), with hyperparameters tuned by
+grid/randomized search under stratified 5-fold cross-validation on the
+training split only. The full comparison table is in
+`03_ModelTraining.ipynb`; every run — not only the selected one — is logged
+under `ml_pipeline/experiments/`, per `IMPLEMENTATION_RULES.md`.
+
+Per `CLAUDE.md`, selection was explicitly **not** made on accuracy alone.
+Indeed, accuracy alone would not have resolved this comparison: Random
+Forest and SVM tie exactly on accuracy (0.8864), and all five models fall
+within a narrow 0.873–0.886 band. The decision rests on the following
+reasoning:
+
+**1. Best held-out ROC-AUC (0.9844).** Random Forest achieved the highest
+one-vs-rest macro ROC-AUC of any tuned model. ROC-AUC is threshold-independent,
+so it measures how well the model *ranks* risk rather than how it performs at
+one arbitrary decision boundary — the more relevant property for an
+early-warning system whose operating threshold may later be tuned toward
+higher sensitivity.
+
+**2. SVM ruled out on ROC-AUC despite tying on F1.** Random Forest and SVM
+are effectively tied on F1 (0.8861 vs 0.8860) and identical on accuracy and
+balanced accuracy. They are separated decisively by ROC-AUC: 0.9844 vs
+0.9245. The SVM's headline scores therefore rest on a much weaker underlying
+ranking of class probabilities, and its calibrated probability estimates are
+correspondingly less trustworthy — which matters directly here, since
+downstream explanation and recommendation logic consumes predicted
+probabilities, not just the argmax label.
+
+**3. No meaningful CV-to-test gap, unlike LightGBM.** LightGBM produced the
+*highest* cross-validated `f1_macro` of any model (0.8945) yet one of the
+lowest held-out test F1 scores (0.8726) — a CV-to-test drop of roughly 0.022
+in the direction that signals overfitting to the CV fold structure. Random
+Forest showed the opposite, healthier pattern (CV 0.8808 → test 0.8861: test
+performance slightly *exceeds* CV, consistent with the final model being
+refit on the full training split rather than on 4/5 of it). **LightGBM was
+therefore not selected despite having the single strongest cross-validation
+number** — this is precisely the case that justifies why CV score alone was
+not used as the selection criterion, and it is recorded as such in
+`model_card.md` under Limitations.
+
+**4. TreeSHAP compatibility — directly relevant to the research
+contribution.** Random Forest is a tree ensemble, so SHAP values can be
+computed exactly and in polynomial time via TreeSHAP. An SVM would have
+required KernelSHAP, which is both approximate and substantially slower.
+Since the dissertation's core contribution is a Human-Centered Explainable
+AI Framework — and since Phase 4 includes a *faithfulness check* comparing
+generated plain-language explanations against the SHAP values that produced
+them — exact rather than approximated Shapley values materially strengthen
+that evaluation. Choosing a model whose explanations are approximations
+would weaken the central claim.
+
+**5. Precedent in the reviewed literature.** Multiple studies in Chapter 2's
+review found Random Forest to be a top performer on comparable
+student-stress datasets, so this selection is consistent with, rather than
+divergent from, the established findings in this problem space.
+
+**Trade-off acknowledged.** Logistic Regression achieved a marginally higher
+ROC-AUC (0.9851 vs 0.9844) than the selected model. It was not selected
+because that difference (0.0007) is negligible and almost certainly within
+noise for a 220-row test set, while Random Forest is better on every other
+reported metric (accuracy 0.8864 vs 0.8818, F1 0.8861 vs 0.8820). The
+untuned linear baseline performing this close to every tuned model is
+itself a finding, and is treated as further evidence for the
+construct-validity concern documented in the section above — it suggests the
+decision boundary in this dataset is close to linearly separable, which is
+not what one would expect of genuinely noisy self-reported wellbeing data.
+
+**Not yet established.** This selection rests on internal validation only
+(CV + a held-out split of the same dataset). It is provisional until the
+Phase 8 external validation set is collected; if performance does not hold
+there, the selection must be revisited rather than defended.
