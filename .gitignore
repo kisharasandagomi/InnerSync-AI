@@ -10,6 +10,7 @@ ml_pipeline/datasets/
 ml_pipeline/artifacts/*
 !ml_pipeline/artifacts/feature_schema.json
 !ml_pipeline/artifacts/artifact_manifest.json
+!ml_pipeline/artifacts/shap_config.json
 
 *.pkl
 

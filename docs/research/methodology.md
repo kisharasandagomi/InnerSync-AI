@@ -175,3 +175,110 @@ not what one would expect of genuinely noisy self-reported wellbeing data.
 (CV + a held-out split of the same dataset). It is provisional until the
 Phase 8 external validation set is collected; if performance does not hold
 there, the selection must be revisited rather than defended.
+
+## SHAP Global Explainability — `04_SHAPAnalysis.ipynb`
+
+SHAP values were computed with `TreeExplainer` (exact, not approximated) on
+the same 220-row held-out test set, loading the saved artifact rather than
+retraining. The notebook asserts the loaded model reproduces the accuracy and
+F1 recorded in `artifact_manifest.json` before explaining anything, so the
+explanations provably describe the model documented in the model card.
+
+### Global importance ranking (mean |SHAP|, averaged across the 3 classes)
+
+| Rank | Feature | mean \|SHAP\| | Domain |
+|---|---|---|---|
+| 1 | blood_pressure | 0.0804 | Physiological |
+| 2 | sleep_quality | 0.0385 | Physiological |
+| 3 | teacher_student_relationship | 0.0355 | Academic |
+| 4 | academic_performance | 0.0343 | Academic |
+| 5 | basic_needs | 0.0305 | Environmental |
+| 6 | depression | 0.0271 | Psychological |
+| 7 | social_support | 0.0270 | Social |
+| 8 | self_esteem | 0.0263 | Psychological |
+| 9 | anxiety_level | 0.0249 | Psychological |
+| 10 | bullying | 0.0225 | Social |
+| 11 | safety | 0.0213 | Environmental |
+| 12 | extracurricular_activities | 0.0174 | Social |
+| 13 | headache | 0.0162 | Physiological |
+| 14 | peer_pressure | 0.0161 | Social |
+| 15 | future_career_concerns | 0.0147 | Academic |
+| 16 | study_load | 0.0096 | Academic |
+| 17 | living_conditions | 0.0091 | Environmental |
+| 18 | noise_level | 0.0074 | Environmental |
+| 19 | mental_health_history | 0.0041 | Psychological |
+| 20 | breathing_problem | 0.0034 | Physiological |
+
+### Direction sanity check
+
+For each feature, its value was correlated against its SHAP contribution
+toward class 2 (high stress). Expected directions were **stated in advance**
+from domain reasoning, then compared — a genuine pre-registered check rather
+than post-hoc rationalisation.
+
+**All 19 features with a directional prior matched expectation; zero
+anomalies.** Higher anxiety, depression, bullying, peer pressure, study load,
+headache, noise, and mental-health history all push toward higher predicted
+stress; higher self-esteem, sleep quality, social support, academic
+performance, basic needs, safety, living conditions, and teacher–student
+relationship all push away from it. `extracurricular_activities` was marked
+*ambiguous* in advance (overcommitment vs. healthy engagement are both
+plausible) and so was not scored; the model treats it as stress-increasing
+(r = +0.71), which is defensible but should not be claimed as a confirmed
+prior.
+
+The model's reasoning is therefore **directionally coherent with the
+wellbeing literature**. That is a genuine positive result — but it concerns
+direction only, and is separate from the magnitude problem below.
+
+### Which domain dominates — and the artifact that undermines the question
+
+Taken at face value, the ranking is led by the **physiological** domain
+(`blood_pressure` rank 1, `sleep_quality` rank 2), followed closely by
+**academic** (ranks 3–4), with psychological and social factors mid-table.
+That would be a mild surprise against Chapter 2, where the reviewed
+literature emphasises academic pressure and psychological factors as the
+primary drivers of student stress, with physiological variables typically
+treated as *consequences* of stress rather than leading predictors of it.
+
+**That reading should not be reported, because rank 1 is a data artifact.**
+Investigation in `04_SHAPAnalysis.ipynb` established:
+
+- `blood_pressure` maps near-deterministically and **non-monotonically** to
+  the target: value 1 → moderate stress in 100% of rows, value 2 → low stress
+  in 100% of rows, value 3 → high stress in 73.8%. For **54.5% of the
+  dataset, this single feature fixes the label exactly.**
+- The mapping's non-monotonic value order is why `01_EDA.ipynb` missed it —
+  Pearson correlation gave `blood_pressure` the *weakest* association of any
+  feature (r = +0.394). A linear coefficient is structurally incapable of
+  seeing this relationship, so the correlation heatmap gave a false
+  reassurance.
+- A **three-line lookup table on `blood_pressure` alone** matches the tuned
+  20-feature Random Forest on accuracy (0.8864 vs 0.8864) and beats it on
+  macro F1 (0.8890 vs 0.8861).
+
+The most plausible explanation is that `blood_pressure` was **generated from
+the label** during dataset construction — target leakage present in the
+published data, not introduced by this project's pipeline.
+
+### Consequences for the results and limitations chapters
+
+1. **The five-model comparison measured less than it appeared to.** The tight
+   0.873–0.886 band across all five models is the signature of every model
+   finding the same shortcut, not evidence of a well-posed problem.
+2. **The ~88% figures approximate an artifact ceiling** and must not be
+   compared like-for-like against Chapter 2's 63–99% range.
+3. **This sharpens, rather than replaces, the construct-validity concern**
+   already documented above. That section anticipated inflated performance
+   from a single suspiciously clean dataset; this is the concrete mechanism,
+   identified and quantified.
+4. **The framework itself is validated by this finding, not damaged by it.**
+   The SHAP layer — the dissertation's core contribution — is what exposed a
+   leak that standard correlation-based EDA had missed entirely. That is a
+   defensible argument *for* explainability-first methodology, and should be
+   presented as such rather than buried as an embarrassment.
+5. **Recommended next modelling step** (deliberate decision, not yet taken):
+   re-run the full comparison with `blood_pressure` excluded, to measure what
+   the other 19 features genuinely contribute. Expect substantially lower
+   headline numbers — that is the point, and the lower number is the more
+   honest one to report.
