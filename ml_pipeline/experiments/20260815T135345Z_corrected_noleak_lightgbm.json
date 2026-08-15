@@ -1,0 +1,75 @@
+{
+  "timestamp_utc": "20260815T135345Z",
+  "experiment_name": "corrected_noleak_lightgbm",
+  "model": "LGBMClassifier",
+  "hyperparameters": {
+    "boosting_type": "gbdt",
+    "class_weight": null,
+    "colsample_bytree": 1.0,
+    "importance_type": "split",
+    "learning_rate": 0.05,
+    "max_depth": 10,
+    "min_child_samples": 20,
+    "min_child_weight": 0.001,
+    "min_split_gain": 0.0,
+    "n_estimators": 100,
+    "n_jobs": 1,
+    "num_leaves": 63,
+    "objective": null,
+    "random_state": 42,
+    "reg_alpha": 0.0,
+    "reg_lambda": 0.0,
+    "subsample": 1.0,
+    "subsample_for_bin": 200000,
+    "subsample_freq": 0,
+    "verbose": -1
+  },
+  "dataset": {
+    "path": "../datasets/raw/student_stress_factors.csv",
+    "sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed"
+  },
+  "split": {
+    "test_size": 0.2,
+    "stratify": true,
+    "random_state": 42,
+    "train_rows": 880,
+    "test_rows": 220,
+    "cv_folds": 5,
+    "cv_scoring": "f1_macro",
+    "cv_best_score": 0.8851452086903754,
+    "excluded_leaky_features": [
+      "sleep_quality",
+      "future_career_concerns",
+      "blood_pressure",
+      "depression",
+      "bullying",
+      "anxiety_level"
+    ],
+    "n_features": 14
+  },
+  "metrics": {
+    "accuracy": 0.8727272727272727,
+    "balanced_accuracy": 0.8729979979979979,
+    "precision_macro": 0.8736217219677883,
+    "recall_macro": 0.8729979979979979,
+    "f1_macro": 0.8724797133790648,
+    "confusion_matrix": [
+      [
+        60,
+        6,
+        8
+      ],
+      [
+        3,
+        65,
+        4
+      ],
+      [
+        5,
+        2,
+        67
+      ]
+    ],
+    "roc_auc_macro_ovr": 0.9821276756208265
+  }
+}

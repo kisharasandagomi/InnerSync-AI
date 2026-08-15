@@ -1,16 +1,17 @@
 {
-  "model_version": "v1",
-  "created_utc": "2026-08-15T07:49:20Z",
+  "model_version": "v2",
+  "supersedes": "v1",
+  "created_utc": "2026-08-15T13:59:19Z",
   "explainer": {
     "type": "TreeExplainer",
     "library": "shap",
     "library_version": "0.52.0",
     "exact": true,
-    "rationale": "Random Forest is a tree ensemble, so Shapley values are exact rather than approximated."
+    "rationale": "Random Forest is a tree ensemble, so Shapley values are exact."
   },
   "model_artifact": {
-    "filename": "stress_model_v1.pkl",
-    "sha256": "a5f9fe7f57d39318eef33ad293308965936c011964fc43327a35ca70ba274e6f"
+    "filename": "stress_model_v2.pkl",
+    "sha256": "0033ea9250bc153a758edf86816e0c0e5000617d568861f5569c7e03c52acd69"
   },
   "target": {
     "name": "stress_level",
@@ -26,13 +27,9 @@
     }
   },
   "feature_order": [
-    "anxiety_level",
     "self_esteem",
     "mental_health_history",
-    "depression",
     "headache",
-    "blood_pressure",
-    "sleep_quality",
     "breathing_problem",
     "noise_level",
     "living_conditions",
@@ -41,124 +38,101 @@
     "academic_performance",
     "study_load",
     "teacher_student_relationship",
-    "future_career_concerns",
     "social_support",
     "peer_pressure",
-    "extracurricular_activities",
-    "bullying"
+    "extracurricular_activities"
+  ],
+  "excluded_features_for_leakage": [
+    "sleep_quality",
+    "future_career_concerns",
+    "blood_pressure",
+    "depression",
+    "bullying",
+    "anxiety_level"
   ],
   "base_values_per_class": {
-    "0": 0.3412613636363635,
-    "1": 0.3244431818181819,
-    "2": 0.3342954545454545
+    "0": 0.34069886363636376,
+    "1": 0.3254886363636365,
+    "2": 0.3338124999999999
   },
   "shap_values_shape": "(n_samples, n_features, n_classes)",
   "global_importance_ranking": [
     {
       "rank": 1,
-      "feature": "blood_pressure",
-      "mean_abs_shap": 0.08043707052212297
+      "feature": "social_support",
+      "mean_abs_shap": 0.055764922033691024
     },
     {
       "rank": 2,
-      "feature": "sleep_quality",
-      "mean_abs_shap": 0.038455362540969644
+      "feature": "basic_needs",
+      "mean_abs_shap": 0.05100215484327669
     },
     {
       "rank": 3,
-      "feature": "teacher_student_relationship",
-      "mean_abs_shap": 0.03553357011107142
+      "feature": "academic_performance",
+      "mean_abs_shap": 0.049524246970102374
     },
     {
       "rank": 4,
-      "feature": "academic_performance",
-      "mean_abs_shap": 0.03431286733256694
+      "feature": "teacher_student_relationship",
+      "mean_abs_shap": 0.04429871706556878
     },
     {
       "rank": 5,
-      "feature": "basic_needs",
-      "mean_abs_shap": 0.030454893919707987
+      "feature": "self_esteem",
+      "mean_abs_shap": 0.04427233860551155
     },
     {
       "rank": 6,
-      "feature": "depression",
-      "mean_abs_shap": 0.02708288268535956
+      "feature": "peer_pressure",
+      "mean_abs_shap": 0.043790487809273804
     },
     {
       "rank": 7,
-      "feature": "social_support",
-      "mean_abs_shap": 0.026958534811422314
+      "feature": "extracurricular_activities",
+      "mean_abs_shap": 0.042932314281706206
     },
     {
       "rank": 8,
-      "feature": "self_esteem",
-      "mean_abs_shap": 0.026305051517743927
+      "feature": "headache",
+      "mean_abs_shap": 0.03711135633922041
     },
     {
       "rank": 9,
-      "feature": "anxiety_level",
-      "mean_abs_shap": 0.02491591658955894
+      "feature": "safety",
+      "mean_abs_shap": 0.03671887476725836
     },
     {
       "rank": 10,
-      "feature": "bullying",
-      "mean_abs_shap": 0.022545213603606232
+      "feature": "study_load",
+      "mean_abs_shap": 0.016953666760442004
     },
     {
       "rank": 11,
-      "feature": "safety",
-      "mean_abs_shap": 0.02126269996172489
+      "feature": "noise_level",
+      "mean_abs_shap": 0.012798295655070091
     },
     {
       "rank": 12,
-      "feature": "extracurricular_activities",
-      "mean_abs_shap": 0.01741698517790548
+      "feature": "living_conditions",
+      "mean_abs_shap": 0.010434775690418742
     },
     {
       "rank": 13,
-      "feature": "headache",
-      "mean_abs_shap": 0.016196206263166608
+      "feature": "breathing_problem",
+      "mean_abs_shap": 0.005691586880607311
     },
     {
       "rank": 14,
-      "feature": "peer_pressure",
-      "mean_abs_shap": 0.016147642739383582
-    },
-    {
-      "rank": 15,
-      "feature": "future_career_concerns",
-      "mean_abs_shap": 0.014661385478291695
-    },
-    {
-      "rank": 16,
-      "feature": "study_load",
-      "mean_abs_shap": 0.009555761069767259
-    },
-    {
-      "rank": 17,
-      "feature": "living_conditions",
-      "mean_abs_shap": 0.009121221428708852
-    },
-    {
-      "rank": 18,
-      "feature": "noise_level",
-      "mean_abs_shap": 0.0073706205166829035
-    },
-    {
-      "rank": 19,
       "feature": "mental_health_history",
-      "mean_abs_shap": 0.004086941737047263
-    },
-    {
-      "rank": 20,
-      "feature": "breathing_problem",
-      "mean_abs_shap": 0.003363957990745236
+      "mean_abs_shap": 0.005646948985253028
     }
   ],
   "computed_on": {
-    "split": "held-out test set reproduced from 03_ModelTraining.ipynb",
+    "split": "held-out test set, identical rows to the v1 run",
     "n_samples": 220,
     "dataset_sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed"
   },
-  "usage_note": "Consumed by backend/app/explainability. Raw SHAP values must never reach an end user - they are translated by the Human-Centered Explanation Generator first."
+  "caveat": "Leakage remains distributed across the retained features; see 02_Preprocessing.ipynb. These explanations are structurally valid but describe a model fit to a compromised dataset.",
+  "usage_note": "Consumed by backend/app/explainability. Raw SHAP values must never reach an end user - the Human-Centered Explanation Generator translates them first."
 }

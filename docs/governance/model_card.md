@@ -30,9 +30,25 @@ Explanation Generator before reaching a student.
 
 ## Model Type and Selection
 
-**Random Forest** (`scikit-learn` `RandomForestClassifier`), hyperparameters
+> **SUPERSEDED — v1 → v2.** A systematic target-leakage audit
+> (`02_Preprocessing.ipynb`) found six features that each individually
+> reproduce or beat the full model's accuracy via a trivial one-value lookup
+> rule. The model was retrained with those six excluded. **The current model
+> is v2 (14 features).** The v1 description immediately below is retained for
+> the record; current v2 figures follow in Evaluation Results.
+
+**Current model (v2)**: Random Forest (`RandomForestClassifier`),
+`max_depth=None`, `min_samples_leaf=1`, `min_samples_split=5`,
+`n_estimators=200`, `random_state=42`, trained on **14 features** with
+`sleep_quality`, `future_career_concerns`, `blood_pressure`, `depression`,
+`bullying`, and `anxiety_level` excluded for target leakage. Random Forest
+was **re-selected from scratch** on the corrected feature set (highest
+ROC-AUC 0.9838, highest F1 0.8815, and the only candidate without an adverse
+CV-to-test gap), not carried over by assumption.
+
+**Superseded model (v1)**: Random Forest, hyperparameters
 `max_depth=10`, `min_samples_leaf=1`, `min_samples_split=2`,
-`n_estimators=100`, `random_state=42`.
+`n_estimators=100`, `random_state=42`, trained on all 20 features.
 
 Selected over Logistic Regression, XGBoost, SVM, and LightGBM. Selection was
 explicitly not made on accuracy alone — Random Forest and SVM tie exactly on
@@ -48,9 +64,28 @@ All five runs are logged in `ml_pipeline/experiments/`.
 
 ## Evaluation Results
 
-All five models on the identical 220-row held-out test set. The selected
-model is shown in bold; the others are retained here for transparency, since
-reporting only the winner would obscure how narrow the margins are.
+### Current — v2 (14 features, leaky features excluded)
+
+Identical 220-row held-out test set, identical CV/tuning protocol.
+
+| Model | Accuracy | Balanced Acc. | Precision (macro) | Recall (macro) | F1 (macro) | ROC-AUC (macro, OvR) |
+|---|---|---|---|---|---|---|
+| Logistic Regression (baseline) | 0.8773 | 0.8775 | 0.8772 | 0.8775 | 0.8773 | 0.9520 |
+| **Random Forest (selected)** | **0.8818** | **0.8821** | **0.8824** | **0.8821** | **0.8815** | **0.9838** |
+| XGBoost | 0.8727 | 0.8731 | 0.8730 | 0.8731 | 0.8726 | 0.9807 |
+| SVM | 0.8773 | 0.8775 | 0.8786 | 0.8775 | 0.8776 | 0.9138 |
+| LightGBM | 0.8727 | 0.8730 | 0.8736 | 0.8730 | 0.8725 | 0.9821 |
+
+Selected model's cross-validated `f1_macro`: 0.8740 (test 0.8815 — test
+exceeds CV, the healthy pattern).
+
+**Excluding the six leaking features cost only 0.0046 accuracy.** That is
+itself the central finding, not a reassurance — see Limitations.
+
+### Superseded — v1 (20 features, leakage present)
+
+Retained for the record. These are the figures originally reported before the
+leakage audit.
 
 | Model | Accuracy | Balanced Acc. | Precision (macro) | Recall (macro) | F1 (macro) | ROC-AUC (macro, OvR) |
 |---|---|---|---|---|---|---|
@@ -65,7 +100,7 @@ and macro weights each equally rather than letting any one dominate).
 Balanced accuracy is by definition macro-averaged recall, hence identical to
 the recall column — both are reported because both are required.
 
-Selected model's confusion matrix (rows = true, columns = predicted):
+v1 selected model's confusion matrix (rows = true, columns = predicted):
 
 | | pred 0 | pred 1 | pred 2 |
 |---|---|---|---|
@@ -96,6 +131,25 @@ performed. Fill in global/local explanation findings once complete.]`
 
 ## Limitations
 
+- **CRITICAL — pervasive target leakage in the training dataset.** A
+  systematic audit (`02_Preprocessing.ipynb`) found that label information is
+  redundantly encoded across essentially every feature. A trivial one-value
+  lookup rule on `sleep_quality` alone scores 0.9045 accuracy, and on
+  `future_career_concerns` alone 0.9000 — **both beat the entire tuned
+  20-feature model (0.8864)**. Six features individually rival it. Every
+  feature shows the same signature: a small near-uniform bucket at value 0,
+  with all other values mapping to a single class at 85–100% purity,
+  consistent with features generated conditional on the label.
+  **Removal is not a remedy**: dropping the three worst offenders costs zero
+  accuracy, and the six *weakest* features alone still yield 0.85 against a
+  0.333 chance baseline. **No accuracy figure in this card — v1 or v2 —
+  should be presented as evidence of real-world stress-prediction
+  capability.** See `methodology.md` § Data Quality / Leakage Finding and
+  `ADR.md` ADR-003.
+- This is the same category of defect that led to the retraction of a
+  comparable published study discussed in Chapter 2 (Tariq et al., 2025) —
+  here independently identified in this project's own benchmark data rather
+  than taken from the retraction notice.
 - Trained substantially on a single public, self-reported, crowd-sourced
   dataset with limited independent verification of its fields — treat
   benchmark performance as an upper bound, not a guarantee of real-world
@@ -104,6 +158,10 @@ performed. Fill in global/local explanation findings once complete.]`
   |r| = 0.7), which plausibly inflates apparent performance; see
   `docs/research/methodology.md` § Handling the risk of inflated apparent
   performance.
+- Correlation-based EDA and VIF both **passed** this dataset. Neither
+  detected the leakage, because the strongest leaking mappings are
+  non-monotonic and therefore invisible to Pearson correlation. SHAP analysis
+  was what surfaced it.
 - **Cross-validation score alone was not sufficient to select a model, and
   should not be read as one.** LightGBM produced the highest cross-validated
   `f1_macro` of any candidate (0.8945) but one of the lowest held-out test F1

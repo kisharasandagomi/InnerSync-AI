@@ -1,0 +1,93 @@
+{
+  "timestamp_utc": "20260815T135343Z",
+  "experiment_name": "corrected_noleak_svm",
+  "model": "CalibratedClassifierCV",
+  "hyperparameters": {
+    "memory": null,
+    "steps": [
+      [
+        "scaler",
+        "StandardScaler()"
+      ],
+      [
+        "svc",
+        "CalibratedClassifierCV(ensemble=False,\n                       estimator=SVC(C=10, kernel='linear', random_state=42))"
+      ]
+    ],
+    "transform_input": null,
+    "verbose": false,
+    "scaler": "StandardScaler()",
+    "svc": "CalibratedClassifierCV(ensemble=False,\n                       estimator=SVC(C=10, kernel='linear', random_state=42))",
+    "scaler__copy": true,
+    "scaler__with_mean": true,
+    "scaler__with_std": true,
+    "svc__cv": null,
+    "svc__ensemble": false,
+    "svc__estimator__C": 10,
+    "svc__estimator__break_ties": false,
+    "svc__estimator__cache_size": 200,
+    "svc__estimator__class_weight": null,
+    "svc__estimator__coef0": 0.0,
+    "svc__estimator__decision_function_shape": "ovr",
+    "svc__estimator__degree": 3,
+    "svc__estimator__gamma": "scale",
+    "svc__estimator__kernel": "linear",
+    "svc__estimator__max_iter": -1,
+    "svc__estimator__probability": "deprecated",
+    "svc__estimator__random_state": 42,
+    "svc__estimator__shrinking": true,
+    "svc__estimator__tol": 0.001,
+    "svc__estimator__verbose": false,
+    "svc__estimator": "SVC(C=10, kernel='linear', random_state=42)",
+    "svc__method": "sigmoid",
+    "svc__n_jobs": null
+  },
+  "dataset": {
+    "path": "../datasets/raw/student_stress_factors.csv",
+    "sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed"
+  },
+  "split": {
+    "test_size": 0.2,
+    "stratify": true,
+    "random_state": 42,
+    "train_rows": 880,
+    "test_rows": 220,
+    "cv_folds": 5,
+    "cv_scoring": "f1_macro",
+    "cv_best_score": 0.8853194876306395,
+    "excluded_leaky_features": [
+      "sleep_quality",
+      "future_career_concerns",
+      "blood_pressure",
+      "depression",
+      "bullying",
+      "anxiety_level"
+    ],
+    "n_features": 14
+  },
+  "metrics": {
+    "accuracy": 0.8772727272727273,
+    "balanced_accuracy": 0.8775025025025025,
+    "precision_macro": 0.8786092079905594,
+    "recall_macro": 0.8775025025025025,
+    "f1_macro": 0.8775630871851196,
+    "confusion_matrix": [
+      [
+        61,
+        5,
+        8
+      ],
+      [
+        3,
+        65,
+        4
+      ],
+      [
+        7,
+        0,
+        67
+      ]
+    ],
+    "roc_auc_macro_ovr": 0.9137652207001521
+  }
+}

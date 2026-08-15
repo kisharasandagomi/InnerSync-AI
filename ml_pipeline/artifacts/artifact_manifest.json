@@ -1,45 +1,60 @@
 {
-  "model_version": "v1",
-  "created_utc": "2026-08-15T05:16:39Z",
+  "model_version": "v2",
+  "supersedes": "v1",
+  "created_utc": "2026-08-15T13:53:46Z",
   "selected_model": "RandomForestClassifier",
-  "selection_rationale_doc": "docs/research/methodology.md \u00a7 Model Selection",
+  "selection_rationale_doc": "docs/research/methodology.md - Data Quality / Leakage Finding",
   "artifacts": {
     "model": {
-      "filename": "stress_model_v1.pkl",
-      "sha256": "a5f9fe7f57d39318eef33ad293308965936c011964fc43327a35ca70ba274e6f",
+      "filename": "stress_model_v2.pkl",
+      "sha256": "0033ea9250bc153a758edf86816e0c0e5000617d568861f5569c7e03c52acd69",
       "committed": false,
       "note": "gitignored binary; regenerate by re-running 03_ModelTraining.ipynb"
     },
     "feature_schema": {
       "filename": "feature_schema.json",
       "committed": true
+    },
+    "shap_config": {
+      "filename": "shap_config.json",
+      "committed": true
     }
   },
   "training_dataset": {
     "path": "../datasets/raw/student_stress_factors.csv",
     "sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed",
-    "rows": 1100
+    "rows": 1100,
+    "features_used": 14,
+    "features_excluded_for_leakage": [
+      "sleep_quality",
+      "future_career_concerns",
+      "blood_pressure",
+      "depression",
+      "bullying",
+      "anxiety_level"
+    ]
   },
   "hyperparameters": {
-    "max_depth": 10,
+    "max_depth": null,
     "min_samples_leaf": 1,
-    "min_samples_split": 2,
-    "n_estimators": 100
+    "min_samples_split": 5,
+    "n_estimators": 200
   },
   "validation": {
     "cv": "StratifiedKFold(n_splits=5, shuffle=True, random_state=42)",
     "cv_scoring": "f1_macro",
-    "cv_best_score": 0.8808005723071354,
+    "cv_best_score": 0.874019388623932,
     "holdout_test_size": 0.2,
     "holdout_test_rows": 220,
-    "external_validation": "not yet performed \u2014 planned for Phase 8"
+    "external_validation": "not yet performed - planned for Phase 8"
   },
   "holdout_test_metrics": {
-    "accuracy": 0.8863636363636364,
-    "balanced_accuracy": 0.8867617617617617,
-    "precision_macro": 0.8881673881673882,
-    "recall_macro": 0.8867617617617617,
-    "f1_macro": 0.8860582163440068,
-    "roc_auc_macro_ovr": 0.9843788565963223
-  }
+    "accuracy": 0.8818181818181818,
+    "balanced_accuracy": 0.8821321321321322,
+    "precision_macro": 0.8823962312197606,
+    "recall_macro": 0.8821321321321322,
+    "f1_macro": 0.8815104439313268,
+    "roc_auc_macro_ovr": 0.9837718711862548
+  },
+  "caveat": "Leakage audit (02_Preprocessing.ipynb) found label information redundantly encoded across essentially all features. Removing the six worst offenders cost only 0.005 accuracy, and the six weakest features alone still reach 0.85. These metrics must NOT be presented as evidence of real-world predictive performance."
 }

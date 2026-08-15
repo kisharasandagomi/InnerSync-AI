@@ -282,3 +282,151 @@ published data, not introduced by this project's pipeline.
    the other 19 features genuinely contribute. Expect substantially lower
    headline numbers — that is the point, and the lower number is the more
    honest one to report.
+
+## Data Quality / Leakage Finding
+
+This section documents a methodological event, in the order it actually
+happened. The original comparison and its conclusions are deliberately left
+intact above — a reader should be able to follow the discovery sequence
+rather than see a tidied-up final answer.
+
+**Sequence: original 5-model comparison → SHAP flags `blood_pressure` →
+systematic audit of all 20 features → corrected comparison → re-selection.**
+
+### 1. What SHAP surfaced
+
+`04_SHAPAnalysis.ipynb` found `blood_pressure` carrying more than double the
+mean |SHAP| of any other feature, despite `01_EDA.ipynb` having recorded it
+as the *weakest* linearly-correlated feature (r = +0.394). The two facts are
+only reconcilable if the relationship is non-linear, which it is: the mapping
+is near-deterministic and non-monotonic (value 1 → moderate stress in 100% of
+rows, 2 → low in 100%, 3 → high in 73.8%), fixing the label exactly for 54.5%
+of the dataset. Pearson correlation — and therefore the entire EDA heatmap —
+is structurally incapable of detecting this.
+
+### 2. Systematic audit of the remaining 19 features
+
+`blood_pressure` was not assumed to be the only affected column.
+`02_Preprocessing.ipynb` § Systematic Target-Leakage Audit applies three
+tests to every feature: a purity scan, a **single-feature lookup test** (fit
+a "most common class per value" rule on the training split, score it on the
+held-out test set), and a monotonicity check.
+
+The lookup test is the decisive one, and the result is worse than the
+original finding:
+
+| Feature | Lookup-rule accuracy |
+|---|---|
+| sleep_quality | **0.9045** |
+| future_career_concerns | **0.9000** |
+| blood_pressure | 0.8864 |
+| depression | 0.8818 |
+| bullying | 0.8818 |
+| anxiety_level | 0.8773 |
+| headache | 0.8182 |
+| self_esteem | 0.8091 |
+| *(remaining 12)* | 0.591 – 0.750 |
+
+Tuned 20-feature Random Forest, for reference: **0.8864**.
+
+`sleep_quality` and `future_career_concerns` each **beat the entire tuned
+20-feature model on their own**, from a single ordinal column. Six features
+land within 0.01 of it. Every feature shares the same generative signature: a
+small near-uniform bucket at value 0 (n = 30–88, behaving like a missing-data
+sentinel), with every other value mapping to a single class at 85–100%
+purity. A single self-reported 0–5 item cannot genuinely predict another
+self-reported item at 90% accuracy across three balanced classes; real
+psychological survey data is far noisier. The dataset appears to have been
+**generated with features sampled conditional on the label**.
+
+### 3. Removal does not fix it
+
+| Scenario | n features | Accuracy | F1 macro |
+|---|---|---|---|
+| All 20 (original) | 20 | 0.8864 | 0.8861 |
+| Drop `blood_pressure` only | 19 | 0.8773 | 0.8768 |
+| Drop 6 leakiest (lookup > 0.85) | 14 | 0.8864 | 0.8865 |
+| Drop 8 leakiest (lookup > 0.80) | 12 | 0.8727 | 0.8728 |
+| Keep only 6 weakest features | 6 | 0.8500 | 0.8498 |
+
+Chance level for three balanced classes is 0.333. Dropping the three worst
+offenders costs **nothing at all**; keeping only the six *weakest* features
+still yields 0.85. The label information is redundantly encoded across
+essentially every column, so excluding any subset simply shifts the model
+onto the next available proxy. **Feature removal is not a viable remedy for
+this dataset.**
+
+### 4. Corrected comparison and re-selection
+
+The full comparison was nonetheless re-run with all six rivalling features
+excluded (14 remaining), holding split, CV strategy, search grids and tuning
+objective identical so the before/after is apples-to-apples. Model selection
+was re-derived from scratch rather than carried over.
+
+| Model | Accuracy | F1 macro | ROC-AUC | CV→test gap |
+|---|---|---|---|---|
+| Logistic Regression (baseline) | 0.8773 | 0.8773 | 0.9520 | — |
+| **Random Forest (re-selected)** | **0.8818** | **0.8815** | **0.9838** | **−0.0075** |
+| XGBoost | 0.8727 | 0.8726 | 0.9807 | +0.0125 |
+| SVM | 0.8773 | 0.8776 | 0.9138 | +0.0078 |
+| LightGBM | 0.8727 | 0.8725 | 0.9821 | +0.0127 |
+
+Random Forest was re-selected on the same criteria as before — highest
+ROC-AUC (0.9838), highest F1, the only candidate with a *negative* CV-to-test
+gap (the healthy pattern; the other three all scored higher in CV than on the
+held-out set), and TreeSHAP compatibility. It did not win on accuracy alone,
+consistent with `CLAUDE.md`.
+
+Excluding six features cost Random Forest **0.0046 accuracy** — which is the
+finding, not a reassurance.
+
+### 5. SHAP on the corrected model
+
+The v2 global ranking is led by `social_support` (0.0558), `basic_needs`
+(0.0510) and `academic_performance` (0.0495) — a **social/environmental and
+academic** profile, replacing v1's artifact-driven physiological lead. All 13
+features carrying a pre-stated directional prior matched expectation; zero
+anomalies. The model's reasoning is directionally coherent with the wellbeing
+literature, and now closer to what Chapter 2 would predict — but this
+coherence describes reasoning over a compromised dataset and is not evidence
+of real-world validity.
+
+### 6. Relationship to the Tariq et al. (2025) retraction
+
+Chapter 2 discusses the retraction of a comparable published study in this
+exact problem space, on data-integrity grounds. That discussion was, until
+now, an argument taken from the retraction notice — a reason to be careful in
+principle.
+
+It is no longer second-hand. The same category of defect has been
+**independently identified and quantified in this project's own benchmark
+dataset**, by this project's own pipeline, using evidence generated here
+rather than reported elsewhere. This changes the standing of that Chapter 2
+material: it moves from cited background to a directly corroborated
+methodological hazard, demonstrated on data from the same family.
+
+Two consequences for the write-up:
+
+1. The retraction discussion should be cross-referenced to this section, and
+   framed as **confirmed by independent replication of the failure mode**,
+   not merely cited.
+2. It sharpens the research-gap argument. The gap is not only that prior work
+   lacked accessible explanations and adaptive recommendations — it is that
+   **published work in this space has repeatedly failed to detect target
+   leakage in its own training data**, and that an explainability-first
+   pipeline catches what correlation-based EDA and headline accuracy do not.
+
+### 7. Standing of all reported figures
+
+No accuracy figure computed on this dataset — original or corrected — may be
+presented as evidence of real-world stress-prediction capability. The
+corrected run is reported as *evidence that removal does not work*, not as a
+repaired result. The Phase 8 externally-collected validation set is therefore
+no longer a strengthening step: it is the only route by which this project
+can make any empirical claim about genuine predictive performance.
+
+What survives intact, and should be argued positively: the pipeline, the
+evaluation protocol, and the explainability layer all functioned correctly.
+The SHAP analysis detected a data defect that VIF, correlation analysis,
+cross-validation and held-out testing had all passed over. That is a
+substantive methodological result in its own right.

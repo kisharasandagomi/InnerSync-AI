@@ -1,0 +1,95 @@
+{
+  "timestamp_utc": "20260815T135337Z",
+  "experiment_name": "corrected_noleak_xgboost",
+  "model": "XGBClassifier",
+  "hyperparameters": {
+    "objective": "multi:softprob",
+    "base_score": null,
+    "booster": null,
+    "callbacks": null,
+    "colsample_bylevel": null,
+    "colsample_bynode": null,
+    "colsample_bytree": null,
+    "device": null,
+    "early_stopping_rounds": null,
+    "enable_categorical": true,
+    "eval_metric": "mlogloss",
+    "feature_types": null,
+    "feature_weights": null,
+    "gamma": null,
+    "grow_policy": null,
+    "importance_type": null,
+    "interaction_constraints": null,
+    "learning_rate": 0.1,
+    "max_bin": null,
+    "max_cat_threshold": null,
+    "max_cat_to_onehot": null,
+    "max_delta_step": null,
+    "max_depth": 5,
+    "max_leaves": null,
+    "min_child_weight": null,
+    "missing": NaN,
+    "monotone_constraints": null,
+    "multi_strategy": null,
+    "n_estimators": 100,
+    "n_jobs": null,
+    "num_parallel_tree": null,
+    "random_state": 42,
+    "reg_alpha": null,
+    "reg_lambda": null,
+    "sampling_method": null,
+    "scale_pos_weight": null,
+    "subsample": null,
+    "tree_method": null,
+    "validate_parameters": null,
+    "verbosity": null
+  },
+  "dataset": {
+    "path": "../datasets/raw/student_stress_factors.csv",
+    "sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed"
+  },
+  "split": {
+    "test_size": 0.2,
+    "stratify": true,
+    "random_state": 42,
+    "train_rows": 880,
+    "test_rows": 220,
+    "cv_folds": 5,
+    "cv_scoring": "f1_macro",
+    "cv_best_score": 0.8850579293998788,
+    "excluded_leaky_features": [
+      "sleep_quality",
+      "future_career_concerns",
+      "blood_pressure",
+      "depression",
+      "bullying",
+      "anxiety_level"
+    ],
+    "n_features": 14
+  },
+  "metrics": {
+    "accuracy": 0.8727272727272727,
+    "balanced_accuracy": 0.8731231231231232,
+    "precision_macro": 0.8730251881660331,
+    "recall_macro": 0.8731231231231232,
+    "f1_macro": 0.8725654365057979,
+    "confusion_matrix": [
+      [
+        61,
+        8,
+        5
+      ],
+      [
+        4,
+        66,
+        2
+      ],
+      [
+        6,
+        3,
+        65
+      ]
+    ],
+    "roc_auc_macro_ovr": 0.9806698822109782
+  }
+}

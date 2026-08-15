@@ -1,0 +1,66 @@
+{
+  "timestamp_utc": "20260815T135321Z",
+  "experiment_name": "corrected_noleak_baseline_logistic_regression",
+  "model": "LogisticRegression",
+  "hyperparameters": {
+    "C": 1.0,
+    "class_weight": null,
+    "dual": false,
+    "fit_intercept": true,
+    "intercept_scaling": 1,
+    "l1_ratio": 0.0,
+    "max_iter": 1000,
+    "n_jobs": null,
+    "penalty": "deprecated",
+    "random_state": 42,
+    "solver": "lbfgs",
+    "tol": 0.0001,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "dataset": {
+    "path": "../datasets/raw/student_stress_factors.csv",
+    "sha256": "14a45e92708b0c063ad4ab04563aa8fd4e3fc27157fd282e1c0658dc5161faed"
+  },
+  "split": {
+    "test_size": 0.2,
+    "stratify": true,
+    "random_state": 42,
+    "train_rows": 880,
+    "test_rows": 220,
+    "excluded_leaky_features": [
+      "sleep_quality",
+      "future_career_concerns",
+      "blood_pressure",
+      "depression",
+      "bullying",
+      "anxiety_level"
+    ],
+    "n_features": 14
+  },
+  "metrics": {
+    "accuracy": 0.8772727272727273,
+    "balanced_accuracy": 0.8775025025025025,
+    "precision_macro": 0.8771740233384069,
+    "recall_macro": 0.8775025025025025,
+    "f1_macro": 0.8772576109665127,
+    "confusion_matrix": [
+      [
+        62,
+        7,
+        5
+      ],
+      [
+        3,
+        65,
+        4
+      ],
+      [
+        7,
+        1,
+        66
+      ]
+    ],
+    "roc_auc_macro_ovr": 0.951980233658316
+  }
+}
