@@ -430,3 +430,144 @@ evaluation protocol, and the explainability layer all functioned correctly.
 The SHAP analysis detected a data defect that VIF, correlation analysis,
 cross-validation and held-out testing had all passed over. That is a
 substantive methodological result in its own right.
+
+## Human-Centered Explanation Generator (Component 2)
+
+Converts the SHAP attribution for a single prediction into a short paragraph a
+student can read and act on. Implemented as reusable code in
+`ml_pipeline/src/explainability/` (templates and generation logic separated),
+exercised in `06_ExplanationGenerator.ipynb`.
+
+### Design
+
+Two stages, matching the pipeline mandated by
+`.claude/skills/explainable-ai/SKILL.md` (technical explanation → human-centred
+translation):
+
+1. `extract_top_factors()` ranks features by |SHAP| and selects the top 3–4,
+   assigning each a direction and a plain-language phrase.
+2. `assemble_explanation_paragraph()` composes those phrases into 3–5
+   sentences: an opening naming the overall picture, the pressures that stood
+   out, anything working protectively, and a closing framing the result as a
+   changeable snapshot rather than a verdict.
+
+**Direction is taken from the SHAP sign with respect to the high-stress class**,
+not from the raw feature value. Using one consistent axis keeps "raising" and
+"easing" meaningful whichever class was predicted, and guarantees the stated
+direction is derived from the model's actual attribution rather than from an
+assumption about what a high or low value ought to mean.
+
+Templates cover all 14 v2 features in both directions (28 phrases). Every
+phrase is hedged ("appears to", "seems to be") because the model produces a
+probabilistic estimate and the language should not claim more certainty than
+the model has.
+
+### Safety gate
+
+`validate_user_facing_text()` rejects any generated string containing clinical
+vocabulary from `ethical_framework.md`'s avoided list (diagnosis, cure,
+treatment, disorder, condition, symptom, …) or ML terminology (SHAP, feature,
+importance, model, prediction, weight, …). It raises rather than warning,
+satisfying `IMPLEMENTATION_RULES.md`'s requirement that a change exposing a
+SHAP value or feature name to a user must stop rather than pass silently.
+
+Matching uses word boundaries with an inflection suffix (`\bterm\w*\b`) rather
+than substring containment. This was not a theoretical refinement: naive
+substring matching rejected a legitimate phrase because "secure" contains
+"cure", while the boundary form still catches "treatment" and "treated" from
+the stem "treat".
+
+### Why templates rather than an LLM call
+
+Templates were chosen for this specific component, and the trade-off is worth
+stating explicitly because it goes the opposite way elsewhere in the system
+(the chatbot layer does use an LLM).
+
+*In favour of templates*: output is **deterministic**, so the same SHAP input
+always yields the same text and the faithfulness check is exactly reproducible
+— a requirement for the Phase 8 evaluation. It is **auditable**: 28 phrases can
+be read in full and signed off against the approved/avoided vocabulary list,
+which is not possible for an open-ended generator. It is **guaranteed** never
+to emit clinical language or SHAP internals, because the vocabulary is fixed in
+advance rather than constrained by prompt instructions that a model may not
+follow. It has **zero inference cost and no latency**, and introduces no
+third-party data-sharing question for text derived from sensitive wellbeing
+data — relevant to the privacy commitments in `ethical_framework.md`.
+
+*Against templates*: the output is **less natural** and more repetitive across
+students than an LLM would produce, and it **does not adapt** to phrasing,
+tone, or context beyond the branch structure written into it. With 14 features
+and a fixed sentence skeleton, two students with similar profiles receive
+near-identical text.
+
+*Judgement*: for the component whose single job is to not leak clinical or
+technical language into a vulnerable user's hands, a guarantee is worth more
+than fluency. An LLM would be more pleasant to read but would convert a
+hard constraint into a probabilistic one, and every such generation would need
+its own safety check anyway — at which point the check, not the model, is doing
+the load-bearing work. A hybrid (LLM rephrasing of template output, gated by
+the same validator) is a reasonable future extension and is noted as such
+rather than attempted here.
+
+### Faithfulness logging
+
+Every generated explanation carries a record — feature, raw value, signed SHAP
+contribution, chosen direction, resulting phrase, and the share of total
+|SHAP| the explanation accounts for — written to
+`ml_pipeline/experiments/faithfulness_log_*.jsonl`. The record is never
+surfaced to a student. It exists so the plain-language text can later be
+audited against the attribution it claims to describe, which is the
+"faithfulness" criterion in the XAI skill and a prerequisite for evaluating
+explanation quality with real users in Phase 8.
+
+On the four local cases, all 16 selected factors had stated direction matching
+SHAP sign (0 mismatches), and explanations accounted for 42–79% of total
+|SHAP| magnitude.
+
+### Choice of SHAP axis (investigated, not assumed)
+
+`shap_values` is `(n_samples, n_features, n_classes)`, so generating an
+explanation requires choosing which class column to read. The first
+implementation always used the **high-stress column**, which produced an
+incoherent result for mid-scale predictions: a student predicted moderate
+received an explanation consisting only of protective factors, contradicting
+the opening sentence that named a moderate level. This was initially recorded
+as an inherent property of explaining three classes on one axis. That was
+wrong, and the investigation below corrected it.
+
+Three candidate axes were compared on the four local cases, counting how many
+of the top four factors were labelled "raising":
+
+| Axis | low pred | moderate pred | high pred |
+|---|---|---|---|
+| (a) high-stress column only | 0/4 | **0/4** | 4/4 |
+| (b) the predicted class's own column | **4/4** | 4/4 | 4/4 |
+| (c) severity, `SHAP(high) − SHAP(low)` | 0/4 | **2/4** | 4/4 |
+
+- **(a)** describes only distance from the top of the scale, so for a moderate
+  prediction nearly every contribution is negative and the explanation
+  degenerates to an all-protective list.
+- **(b)** — the intuitive fix — is worse, and fails in a way worth recording.
+  A positive SHAP value for the predicted class means "pushed toward this
+  outcome", *not* "increased stress". For a low-stress prediction every strong
+  contributor is therefore positive, so this axis would report met basic needs
+  and strong academic performance as **raising** the student's stress. The
+  semantics invert at the calm end of the scale.
+- **(c)** measures movement toward the severe end relative to the calm end,
+  respecting the ordering of the target. It resolves to all-easing at the low
+  end and all-raising at the high end, while giving mid-scale predictions a
+  genuine mix.
+
+**(c) was adopted**, implemented as `severity_contributions()`. After the
+change, the moderate case surfaces two pressures (strained relationships with
+teaching staff, unmet day-to-day essentials) alongside two protective factors
+(manageable activities outside study, low peer pressure) — a coherent account
+of why the model placed that student in the middle rather than at either end.
+
+**Generalisable point for the dissertation**: this is not specific to this
+dataset or model. Any SHAP explanation over an **ordinal** multi-class target
+faces the same choice, and the two obvious options are both wrong — one
+degenerates at the middle of the scale, the other inverts at the ends.
+Collapsing to a signed severity axis across the extreme classes is the general
+remedy, and is worth stating as a methodological contribution of the
+explainability component rather than an implementation detail.
