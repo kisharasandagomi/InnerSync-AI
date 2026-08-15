@@ -571,3 +571,141 @@ degenerates at the middle of the scale, the other inverts at the ends.
 Collapsing to a signed severity axis across the extreme classes is the general
 remedy, and is worth stating as a methodological contribution of the
 explainability component rather than an implementation detail.
+
+## Personalized Recommendation Engine (Component 4)
+
+Maps the contributing factors already computed for the explanation onto
+concrete, prioritized actions. Implemented in `ml_pipeline/src/recommendation/`
+(catalogue separated from selection logic), exercised in
+`07_RecommendationEngine.ipynb`.
+
+### Shared input with the explanation generator
+
+The engine consumes the **same `ExplanationFactor` list** the explanation
+paragraph was built from — the severity-axis contributions described above, not
+a fresh computation. This is a deliberate coupling: if the two components
+derived their own factor rankings independently, a student could read that
+teaching-staff relationships are straining them and then be advised about
+something else entirely. On the four local cases, all 8 generated
+recommendations traced back to a factor named in that student's own
+explanation (0 untraceable).
+
+### Prioritization logic
+
+1. **Raising factors only.** A protective factor needs acknowledging, not
+   fixing; recommending an action against something already working would be
+   incoherent.
+2. **Severity floor (0.0200).** Derived, and honestly bounded — see below.
+3. **Rank by severity magnitude**, strongest first.
+4. **Cap at three.** Three actions is already a lot to receive at once; more
+   reads as a to-do list and reliably gets ignored — which would additionally
+   corrupt the engagement signal the Adaptive Recovery Framework will later
+   depend on. This directly implements `CLAUDE.md`'s prohibition on generic
+   recommendation dumps.
+
+Observed behaviour across the four cases: low → 0 raising factors → affirmation;
+moderate → 2 actions; high → 3 actions (capped from 4 qualifying); misclassified
+→ 3 actions.
+
+### Deriving the severity floor — and what it does not do
+
+The floor was initially a bare constant. It is now derived from the observed
+distribution of |severity| across the entire held-out test set (220 students ×
+14 features = 3,080 attributions), computed in `07_RecommendationEngine.ipynb`:
+
+| percentile | \|severity\| |
+|---|---|
+| p10 | 0.0086 |
+| **p25** | **0.0200** |
+| p50 | 0.0498 |
+| p75 | 0.0846 |
+| p90 | 0.1331 |
+
+The floor is set at the **25th percentile (0.0200)**. The quartile is the choice
+being made; the round number is a coincidence of this dataset rather than the
+reason for the value.
+
+**The threshold does not currently bind, and this is stated rather than
+glossed.** Across the same test set, 430 raising factors reach the top-4
+selection and **none** falls below 0.0200 — the smallest |severity| among all
+top-4 factors is 0.0346. In other words, the top-4 ranking already excludes
+everything the floor would have excluded.
+
+Two consequences follow, both worth being precise about:
+
+1. The floor functions as a **guard rail for out-of-distribution input**, not as
+   an active filter. It exists so that a student whose attributions are
+   uniformly small — a profile unlike anything in this dataset, or a future
+   model with flatter attributions — receives an affirmation rather than an
+   action constructed from noise. On this data it is inert.
+2. The affirmation observed for the low-stress case is caused by that student
+   having **no raising factors at all**, not by the floor. An earlier draft of
+   this section implied the floor was doing that work; it was not.
+
+The threshold was deliberately *not* raised until it visibly excluded
+something. Tuning a parameter until it appears to earn its place is exactly the
+kind of unjustified choice this section exists to avoid, and the honest position
+is that the top-4 cap is doing the selection work while the floor covers a case
+this dataset does not contain.
+
+### When nothing warrants an action
+
+An engine that always produces recommendations will invent problems. Where no
+factor is both raising and above the severity floor, the engine returns a
+class-appropriate **affirmation** instead of an action list.
+
+The three affirmations differ by predicted class, and the high-stress variant is
+the important one: if a student is under substantial pressure but no single
+factor stands out sharply enough to act on, the honest response is to point
+toward a person rather than an automated tip. That case routes to university
+wellbeing services, consistent with the escalation principle in
+`ethical_framework.md`.
+
+### Why rule-based rather than another ML or SHAP step
+
+The alternative would be learning a recommendation policy — but there is no
+outcome data to learn from. No student has yet received a recommendation, acted
+on it, or reported whether it helped, so any learned policy would be fitted to
+nothing, and its errors would be neither predictable nor explainable.
+
+Rule-based selection is also **auditable in the same way as the explanation
+templates**: the entire mapping is 14 entries that can be read in full and
+reviewed against the approved vocabulary, and every action a student receives
+can be traced deterministically to a signed SHAP contribution above a stated
+threshold. That traceability is the property the whole framework is built on;
+introducing a learned component here would break the audit chain precisely
+where a wellbeing intervention reaches a real person.
+
+All recommendation text passes the same `validate_user_facing_text()` gate as
+the explanation paragraphs, so clinical vocabulary and ML terminology are
+blocked by the same mechanism rather than a parallel one.
+
+### Coverage gap against CLAUDE.md's canonical examples
+
+Two of the four example mappings in `CLAUDE.md` cannot be implemented against
+the v2 model, and this is a dataset limitation rather than a design choice:
+
+| Canonical example | Status |
+|---|---|
+| academic pressure → study planner | Implemented (`study_load`, `academic_performance`) |
+| relationship issues → journaling / social support | Implemented (`social_support`, `teacher_student_relationship`, `peer_pressure`) |
+| poor sleep → sleep hygiene plan | **Not available.** `sleep_quality` was excluded from v2 as a leaking feature (ADR-003), so the model cannot attribute stress to it and the engine cannot honestly recommend on it. |
+| physical inactivity → walking / exercise plan | **Not available.** The dataset contains no exercise or physical-activity field. `extracurricular_activities` measures commitment load, not activity, and is not a substitute. |
+
+Both gaps close if the Phase 8 locally-collected questionnaire includes sleep
+and physical-activity items, which is a concrete argument for their inclusion in
+that instrument.
+
+### Scope boundary — not the Adaptive Recovery Framework
+
+This component produces a recommendation for a **single point-in-time
+assessment**. It holds no memory, no notion of a previous check-in, and no
+engagement signal.
+
+The Adaptive Recovery Framework (Module 8 Component 5 — changing strategy after
+N ignored recommendations) is deliberately not implemented, because it requires
+engagement history across multiple check-ins and therefore the backend
+user-history tables that do not yet exist. The boundary is stated in the
+`engine` module docstring and recorded in every log entry as
+`adaptive_recovery_applied: false`, so a later evaluation cannot mistake
+point-in-time output for adaptive behaviour.

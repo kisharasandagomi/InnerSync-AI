@@ -70,12 +70,42 @@ feature-importance scores, or technical ML/AI terminology.
 
 Instead, always generate a human-readable translation.
 
-Technical: `Feature importance: Sleep quality = -0.42`
-User-facing: *"Your recent sleep pattern appears to be one of the main factors
-affecting your current stress level."*
+Technical: `Feature importance: Teacher-student relationship = +0.057`
+User-facing: *"Your relationships with teaching staff appear to be a source of
+strain rather than support at the moment."*
 
 Every explanation-generation task should ask: would a stressed 19-year-old
 understand this without any ML background?
+
+Each explained factor should also map to a concrete first step the student
+could take this week — the Recommendation Engine (Component 4) works from the
+same contributing factors as the explanation, so the two always describe the
+same situation. Examples against the current 14-feature model:
+
+| Contributing factor | Recommendation |
+|---|---|
+| Academic pressure (`study_load`, `academic_performance`) | Map deadlines onto real calendar hours; take an over-full calendar to a personal tutor |
+| Relationship strain (`social_support`, `peer_pressure`) | One direct, specific arrangement with one person; practise declining one low-stakes commitment |
+| Teaching-staff strain (`teacher_student_relationship`) | One low-stakes email to a lecturer or personal tutor about the work itself |
+| Unmet essentials (`basic_needs`) | Check the students' union or student services hardship support page |
+
+**Revision note (supersedes earlier examples).** This section previously used
+*sleep quality* as its worked example, and the project brief's Module 8
+Component 4 additionally listed *"poor sleep → sleep hygiene plan"* and
+*"physical inactivity → walking/exercise plan"*. Neither is implementable
+against the current model and both have been replaced:
+
+- `sleep_quality` was **excluded from the model as a leaking feature** (see
+  `docs/decisions/ADR.md` ADR-003). The model cannot attribute stress to it, so
+  neither an explanation nor a recommendation may reference it.
+- The dataset contains **no exercise or physical-activity field at all**.
+  `extracurricular_activities` measures commitment load, not activity, and is
+  not a substitute for it.
+
+Both gaps close if the Phase 8 locally-collected questionnaire includes sleep
+and physical-activity items, which is a concrete argument for adding them to
+that instrument. Until then, do not write explanations or recommendations that
+reference sleep or exercise — the model has no basis for either claim.
 
 ## Research Contribution
 
