@@ -709,3 +709,135 @@ user-history tables that do not yet exist. The boundary is stated in the
 `engine` module docstring and recorded in every log entry as
 `adaptive_recovery_applied: false`, so a later evaluation cannot mistake
 point-in-time output for adaptive behaviour.
+
+## NLP Feature Ablation Study (Experiments A–D) — `05_NLP_Ablation.ipynb`
+
+**Research comparison only.** This section documents an ablation study
+produced to inform the dissertation's discussion of whether NLP-derived
+features are worth adding to the system. It does not retrain, replace, or
+modify the deployed v2 model, `backend/app/`, or the `POST /assessments`
+contract, and nothing in `ml_pipeline/src/nlp/` is imported by the backend.
+Every run is logged under `ml_pipeline/experiments/` using the same
+`log_experiment()` pattern established for the main model comparison.
+
+### The four intended conditions
+
+| # | Condition | Status |
+|---|---|---|
+| A | Questionnaire only | Reference — the existing, fully-evaluated v2 Random Forest (`03_ModelTraining.ipynb`, `04_SHAPAnalysis.ipynb`). Not retrained here. |
+| B | NLP only | Run in this study — TF-IDF + Logistic Regression on Dreaddit. |
+| C | Questionnaire + NLP, combined | Not executable on data available today. |
+| D | *(reserved: combined + tuning/feature-selection variant)* | Not executable, same reason as C. |
+
+### Why Experiments C and D cannot run on data available today
+
+This is a methodological finding, not a skipped step, and it was not obvious
+until checked directly against both datasets' actual contents.
+
+A combined model needs one respondent who supplied **both** a structured
+questionnaire response and free text. The Kaggle dataset behind Experiment A
+(`student_stress_factors.csv`) has no text field at all. Dreaddit
+(Experiment B) has text but none of the 14 questionnaire features. The two
+are different people, recruited from different platforms (a student
+wellbeing survey vs. Reddit posts across stress-related subreddits), with no
+shared identifier connecting any row in one to any row in the other.
+
+**Deliberately not attempted**: pairing a random Kaggle respondent's answers
+with a random Dreaddit post's text to manufacture a "combined" row. That
+would fabricate a relationship between two unrelated people — a worse
+methodological error than the target-leakage problem already documented in
+ADR-003 (§ Data Quality / Leakage Finding above), not a workaround for it.
+Leakage was an undetected flaw in real data about real respondents;
+fabricating cross-subject pairs would be inventing data about a person who
+does not exist.
+
+**What would make C and D possible**: the project's own Phase 8
+locally-collected instrument (`docs/governance/data_management_plan.md`) is
+the only data source that structurally supports this, because it collects
+both a Likert-style questionnaire *and* an open-ended free-text prompt
+("what's the biggest factor currently affecting your stress?") from the
+**same** respondent. C and D are recorded here as a planned future analysis,
+contingent on collecting a sufficient number of Phase 8 responses — not as
+an abandoned line of work. If they later show NLP features meaningfully
+improve on Experiment A once genuinely combined data exists, integrating
+that into the deployed pipeline is a separate decision to be made explicitly
+with the project owner, not an automatic next step from this study.
+
+### Experiment A — questionnaire only (reference)
+
+Read directly from `ml_pipeline/artifacts/artifact_manifest.json`, not
+retrained: Random Forest (v2), 14 features, held-out test accuracy 0.8818,
+F1 macro 0.8815, ROC-AUC (macro, OvR) 0.9838. Full detail already documented
+above under § Model Selection.
+
+### Experiment B — NLP only
+
+TF-IDF + Logistic Regression, trained and tuned via `GridSearchCV`
+(`tfidf__max_features` ∈ {3000, 5000, 10000}, `tfidf__ngram_range` ∈
+{(1,1), (1,2)}, `logreg__C` ∈ {0.1, 1, 10}, stratified 5-fold CV,
+`f1_macro` objective — same tuning protocol as every deployed-model
+candidate, for methodological consistency between the two pipelines, not
+because this feeds the deployed model). Trained and evaluated on Dreaddit's
+own official train/test split (2,838 / 715 posts), predicting Dreaddit's own
+binary stress label. No re-splitting, no relabelling.
+
+Best configuration: `max_features=10000`, `ngram_range=(1,1)`, `C=1.0`
+(CV F1 macro 0.7397). Held-out test metrics:
+
+| Metric | Value |
+|---|---|
+| Accuracy | 0.7007 |
+| Balanced accuracy | 0.6989 |
+| Precision (macro) | 0.7017 |
+| Recall (macro) | 0.6989 |
+| F1 (macro) | 0.6989 |
+| ROC-AUC | 0.7974 |
+
+These figures are consistent with the range reported in the published
+Dreaddit benchmark literature for comparable bag-of-words baselines, which is
+a useful sanity check on the pipeline given this is the first time this
+project has trained on this dataset.
+
+**Descriptive sentiment scoring** (VADER, TextBlob) — reported to
+characterise the text, not used as model features anywhere. Mean scores by
+label:
+
+| Label | VADER compound | TextBlob polarity | TextBlob subjectivity |
+|---|---|---|---|
+| 0 (not stressed) | +0.271 | +0.103 | 0.472 |
+| 1 (stressed) | −0.306 | −0.016 | 0.505 |
+
+Both lexicons separate the two classes in the expected direction — stressed
+posts score more negatively on both — without any supervised training. This
+is a mild positive sanity check on Dreaddit's label quality; it is not a
+third ablation condition and was not fed into Experiment B's model.
+
+### Experiment A vs. Experiment B — explicitly not a comparison table
+
+The two are reported side by side for reference only:
+
+| | Experiment A (reference) | Experiment B |
+|---|---|---|
+| Dataset | Kaggle `student_stress_factors.csv` | Dreaddit (Reddit posts) |
+| Population | University student survey respondents | Reddit users, stress-related subreddits |
+| Test rows | 220 | 715 |
+| Target | 3-class (low/moderate/high) | Binary (not stressed/stressed) |
+| Input | 14 Likert-style questionnaire features | Raw post text (TF-IDF) |
+| Accuracy | 0.8818 | 0.7007 |
+| F1 (macro) | 0.8815 | 0.6989 |
+
+**These numbers must not be read as "questionnaire features beat NLP
+features"**, or the reverse. They differ on every axis that would make such
+a reading valid: different datasets, different populations, and a different
+number of target classes (chance level 0.333 for A vs. 0.5 for B) — a
+3-class and a binary F1 score are not the same quantity. The purpose of this
+table is to make each result legible next to the other, not to rank them.
+
+### Standing of this study
+
+Consistent with the rest of this document's treatment of the questionnaire
+dataset: Experiment A's figures remain provisional pending Phase 8 external
+validation (see § Handling the risk of inflated apparent performance).
+Experiment B's figures are a first, honest read on Dreaddit and are not
+claimed to generalise to this project's own student population, since
+Dreaddit's Reddit-user population was never intended to represent it.

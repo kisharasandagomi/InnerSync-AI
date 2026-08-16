@@ -1,0 +1,94 @@
+{
+  "timestamp_utc": "20260816T080647Z",
+  "experiment_name": "ablation_B_nlp_only_tfidf_logreg_dreaddit",
+  "model": "LogisticRegression",
+  "hyperparameters": {
+    "memory": null,
+    "steps": [
+      [
+        "tfidf",
+        "TfidfVectorizer(max_features=10000, stop_words='english')"
+      ],
+      [
+        "logreg",
+        "LogisticRegression(max_iter=1000, random_state=42)"
+      ]
+    ],
+    "transform_input": null,
+    "verbose": false,
+    "tfidf": "TfidfVectorizer(max_features=10000, stop_words='english')",
+    "logreg": "LogisticRegression(max_iter=1000, random_state=42)",
+    "tfidf__analyzer": "word",
+    "tfidf__binary": false,
+    "tfidf__decode_error": "strict",
+    "tfidf__dtype": "<class 'numpy.float64'>",
+    "tfidf__encoding": "utf-8",
+    "tfidf__input": "content",
+    "tfidf__lowercase": true,
+    "tfidf__max_df": 1.0,
+    "tfidf__max_features": 10000,
+    "tfidf__min_df": 1,
+    "tfidf__ngram_range": [
+      1,
+      1
+    ],
+    "tfidf__norm": "l2",
+    "tfidf__preprocessor": null,
+    "tfidf__smooth_idf": true,
+    "tfidf__stop_words": "english",
+    "tfidf__strip_accents": null,
+    "tfidf__sublinear_tf": false,
+    "tfidf__token_pattern": "(?u)\\b\\w\\w+\\b",
+    "tfidf__tokenizer": null,
+    "tfidf__use_idf": true,
+    "tfidf__vocabulary": null,
+    "logreg__C": 1.0,
+    "logreg__class_weight": null,
+    "logreg__dual": false,
+    "logreg__fit_intercept": true,
+    "logreg__intercept_scaling": 1,
+    "logreg__l1_ratio": 0.0,
+    "logreg__max_iter": 1000,
+    "logreg__n_jobs": null,
+    "logreg__penalty": "deprecated",
+    "logreg__random_state": 42,
+    "logreg__solver": "lbfgs",
+    "logreg__tol": 0.0001,
+    "logreg__verbose": 0,
+    "logreg__warm_start": false
+  },
+  "dataset": {
+    "path": "../datasets/raw/dreaddit-train.csv",
+    "sha256": "4e791e60d3f04dd9f14abb1228b0d4f92bf628cc84097c1c173401e98d355f4e"
+  },
+  "split": {
+    "protocol": "Dreaddit official train/test split (not re-split)",
+    "cv_folds": 5,
+    "cv_scoring": "f1_macro",
+    "cv_best_score": 0.7397042097055975,
+    "train_rows": 2838,
+    "test_rows": 715,
+    "test_dataset_path": "../datasets/raw/dreaddit-test.csv",
+    "test_dataset_sha256": "a3b6c9bf5d685f49d57e05d24266dddc52999843256b13e65c07267c543175fe",
+    "ablation_condition": "B",
+    "not_comparable_to": "Experiment A (different dataset, population, and label scheme)"
+  },
+  "metrics": {
+    "accuracy": 0.7006993006993008,
+    "balanced_accuracy": 0.698948102197785,
+    "precision_macro": 0.7017289578601267,
+    "recall_macro": 0.698948102197785,
+    "f1_macro": 0.6989177489177489,
+    "confusion_matrix": [
+      [
+        223,
+        123
+      ],
+      [
+        91,
+        278
+      ]
+    ],
+    "roc_auc": 0.7973745633410091
+  }
+}

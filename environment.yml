@@ -18,27 +18,46 @@
 # WSL rebuild — add them back here (and `pip install` them into the WSL env)
 # if/when they're needed again. pytest, black, and ruff have been reinstalled
 # per IMPLEMENTATION_RULES.md's testing/style requirements.
+#
+# NOTE (Phase 7): `nodejs` (conda-forge) added for the frontend toolchain —
+# this update was missed at the time and is being backfilled here now.
+# NOTE (this session): `nltk`, `regex`, `textblob`, `vadersentiment` added for
+# the descriptive sentiment scoring in the NLP ablation study
+# (`05_NLP_Ablation.ipynb`). Installed with the user's explicit go-ahead per
+# the project's "ask before installing" rule.
 
 name: mainks
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - _libgcc_mutex=0.1
   - _openmp_mutex=5.1
   - bzip2=1.0.8
-  - ca-certificates=2026.7.16
+  - c-ares=1.34.8
+  - ca-certificates=2026.7.22
+  - icu=78.3
   - ld_impl_linux-64=2.44
+  - libabseil=20260526.0
+  - libbrotlicommon=1.2.0
+  - libbrotlidec=1.2.0
+  - libbrotlienc=1.2.0
+  - libev=4.33
   - libexpat=2.8.2
   - libffi=3.4.8
   - libgcc=15.2.0
   - libgcc-ng=15.2.0
   - libmpdec=4.0.1
+  - libnghttp2=1.68.1
+  - libsqlite=3.53.4
   - libstdcxx=15.2.0
   - libuuid=1.41.5
+  - libuv=1.52.1
   - libxcb=1.17.0
   - libzlib=1.3.2
   - ncurses=6.5
-  - openssl=3.5.7
+  - nodejs=26.6.0
+  - openssl=3.6.3
   - packaging=26.0
   - pip=26.1.2
   - pthread-stubs=0.3
@@ -55,6 +74,7 @@ dependencies:
   - xorg-xorgproto=2024.1
   - xz=5.8.2
   - zlib=1.3.2
+  - zstd=1.5.7
   - pip:
       - alembic==1.18.5
       - annotated-doc==0.0.5
@@ -134,6 +154,7 @@ dependencies:
       - nbconvert==7.17.1
       - nbformat==5.10.4
       - nest-asyncio2==1.7.2
+      - nltk==3.10.3
       - notebook==7.6.1
       - notebook-shim==0.2.4
       - numba==0.66.0
@@ -171,6 +192,7 @@ dependencies:
       - pyyaml==6.0.3
       - pyzmq==27.1.0
       - referencing==0.37.0
+      - regex==2026.7.19
       - requests==2.34.2
       - rfc3339-validator==0.1.4
       - rfc3986-validator==0.1.1
@@ -190,6 +212,7 @@ dependencies:
       - stack-data==0.6.3
       - starlette==1.3.1
       - terminado==0.18.1
+      - textblob==0.20.1
       - threadpoolctl==3.6.0
       - tinycss2==1.5.1
       - tornado==6.5.7
@@ -201,6 +224,7 @@ dependencies:
       - uri-template==1.3.0
       - urllib3==2.7.0
       - uvicorn==0.52.1
+      - vadersentiment==3.3.2
       - wcwidth==0.8.2
       - webcolors==25.10.0
       - webencodings==0.5.1
