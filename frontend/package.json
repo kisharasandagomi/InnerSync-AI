@@ -1,7 +1,40 @@
 {
   "name": "innersync-ai-frontend",
-  "version": "0.0.0",
   "private": true,
-  "description": "InnerSync AI data-collection and delivery layer (chat, questionnaire, dashboard). Deferred to PROJECT_ROADMAP.md Phase 7.",
-  "scripts": {}
+  "version": "0.1.0",
+  "type": "module",
+  "description": "InnerSync AI delivery layer. Calls the backend API; contains no ML, SHAP, or explanation logic.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "autoprefixer": "^10.5.4",
+    "jsdom": "^25.0.1",
+    "oxlint": "^1.75.0",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^3.0.5"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
 }

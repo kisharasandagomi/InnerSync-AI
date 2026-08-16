@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* Design tokens.
+   A calm, low-saturation palette: this is a wellbeing tool that people may
+   open while stressed, so the surface should read as quiet rather than
+   clinical or alarming. Deliberately avoids the red/amber/green severity
+   coding a medical dashboard would use — colour is never load-bearing for
+   the stress level, the wording carries it. */
+@theme {
+  --color-ink: #1c2321;
+  --color-ink-soft: #4a5754;
+  --color-ink-faint: #7c8a86;
+  --color-surface: #fbfaf7;
+  --color-card: #ffffff;
+  --color-line: #e4e2dc;
+  --color-accent: #3f6b5f;
+  --color-accent-soft: #eaf1ee;
+  --color-accent-strong: #2f5348;
+  --color-danger: #8a4a42;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Respect users who have asked for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
