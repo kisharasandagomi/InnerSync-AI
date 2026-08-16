@@ -43,10 +43,16 @@
       values it was derived from (log both, compare)
 
 ## Phase 5: Personalization Engine
-- [ ] Stress profile generator (qualitative, no raw percentages shown)
-- [ ] Recommendation rules mapped to dominant SHAP-identified stressors
-- [ ] Engagement tracking (was a recommendation acted on)
-- [ ] Adaptive Recovery Framework (change strategy after N ignored recommendations)
+- [x] Stress profile generator (qualitative, no raw percentages shown) —
+      delivered as the Human-Centered Explanation Generator's paragraph +
+      level label (Component 2, Phase 4); no separate component needed
+- [x] Recommendation rules mapped to dominant SHAP-identified stressors —
+      Personalized Recommendation Engine (Component 4)
+- [x] Engagement tracking (was a recommendation acted on) — self-reported
+      `previous_engagement` on every submission (`EngagementLevel`)
+- [x] Adaptive Recovery Framework (change strategy after N ignored
+      recommendations) — Component 5, `backend/app/services/adaptive_recovery.py`,
+      see ADR-004 and `methodology.md` § Adaptive Recovery Framework
 
 ## Phase 6: Backend Development
 - [ ] FastAPI scaffold, JWT auth (register/login)

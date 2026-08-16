@@ -4,14 +4,21 @@
 
 This component produces a recommendation for a **single point-in-time
 assessment** only. It has no memory, no notion of a previous check-in, and no
-engagement signal.
+engagement signal — nothing here changed to support the Adaptive Recovery
+Framework.
 
 The Adaptive Recovery Framework (Module 8 Component 5) — changing strategy when
-recommendations are repeatedly ignored — is deliberately *not* implemented here.
-It requires engagement history across multiple check-ins, which needs the
-backend user-history tables that do not exist yet. Anything in this module that
-looks like it could become adaptive logic is not; keep the two separate so the
-adaptive component can be evaluated on its own terms later.
+recommendations are repeatedly ignored across consecutive check-ins, and
+escalating toward university wellbeing services under sustained high stress —
+is now implemented, in `backend/app/services/adaptive_recovery.py`, not here.
+It needs to query live, per-user assessment history from the production
+database, which this research-world module structurally cannot depend on (see
+ADR-001; `ml_pipeline/` must never import from `backend/`). It does reuse this
+module's catalogue directly — `ml_pipeline.src.recommendation.catalogue` now
+carries a primary and an alternate template per feature specifically so the
+adaptive component has something to switch to — so recommendation content and
+the vocabulary-safety guarantee stay identical between the point-in-time and
+adaptive paths rather than being duplicated.
 """
 
 from __future__ import annotations
@@ -144,7 +151,10 @@ def build_recommendation_plan(
 
     recommendations: list[Recommendation] = []
     for priority, factor in enumerate(selected, start=1):
-        template: RecommendationTemplate = RECOMMENDATION_CATALOGUE[factor.feature]
+        # [0] = primary template. The point-in-time engine never uses the
+        # alternate at [1] — that exists only for the Adaptive Recovery
+        # Framework (backend/app/services/adaptive_recovery.py).
+        template: RecommendationTemplate = RECOMMENDATION_CATALOGUE[factor.feature][0]
         validate_user_facing_text(f"{template.title} {template.action} {template.rationale}")
         recommendations.append(
             Recommendation(

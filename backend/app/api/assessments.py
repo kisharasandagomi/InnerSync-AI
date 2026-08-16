@@ -26,23 +26,30 @@ def submit_assessment(
     current_user: User = Depends(get_current_user),
     predictor: StressPredictor = Depends(get_model),
 ) -> AssessmentResponse:
-    """Run predict -> explain -> recommend for one questionnaire and persist it.
+    """Run predict -> explain -> recommend -> adapt for one questionnaire and persist it.
 
     Args:
-        payload: The 14 questionnaire values.
+        payload: The 14 questionnaire values plus self-reported engagement
+            with the previous check-in's recommendations.
         db: Database session.
         current_user: Authenticated owner of the assessment.
         predictor: Loaded model wrapper.
 
     Returns:
-        The stress level, plain-language explanation, and recommended actions.
-        No SHAP value, feature name or numeric weight is included — the
-        attribution is persisted server-side for audit only.
+        The stress level, plain-language explanation, and either recommended
+        actions, an affirmation, or — if sustained high stress was detected
+        across consecutive check-ins — an escalation message. No SHAP value,
+        feature name or numeric weight is included — the attribution is
+        persisted server-side for audit only.
     """
+    payload_dict = payload.model_dump()
+    previous_engagement = payload_dict.pop("previous_engagement")
+
     assessment, record, recommendation = create_assessment(
         db=db,
         user_id=current_user.id,
-        feature_values=payload.model_dump(),
+        feature_values=payload_dict,
+        previous_engagement=previous_engagement,
         predictor=predictor,
     )
 
@@ -64,4 +71,6 @@ def submit_assessment(
         ],
         is_affirmation=recommendation.is_affirmation,
         affirmation=recommendation.affirmation_text,
+        is_escalation=recommendation.is_escalation,
+        escalation_message=recommendation.escalation_message,
     )

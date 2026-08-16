@@ -698,17 +698,127 @@ that instrument.
 
 ### Scope boundary — not the Adaptive Recovery Framework
 
+> **Superseded.** This subsection originally stated the Adaptive Recovery
+> Framework was not implemented because the required engagement history and
+> backend user-history tables did not yet exist. Both now exist. The
+> correction follows the same convention as other superseded claims in this
+> project (see `ADR.md` ADR-003 on the v1 → v2 model): retained and marked
+> rather than silently rewritten, so the discovery sequence stays legible.
+> Current status is documented in full in § Adaptive Recovery Framework
+> (Component 5) below.
+
 This component produces a recommendation for a **single point-in-time
 assessment**. It holds no memory, no notion of a previous check-in, and no
-engagement signal.
+engagement signal — nothing about that is different after the Adaptive
+Recovery Framework was added; the framework wraps this component's output
+rather than changing it.
 
-The Adaptive Recovery Framework (Module 8 Component 5 — changing strategy after
-N ignored recommendations) is deliberately not implemented, because it requires
-engagement history across multiple check-ins and therefore the backend
-user-history tables that do not yet exist. The boundary is stated in the
-`engine` module docstring and recorded in every log entry as
-`adaptive_recovery_applied: false`, so a later evaluation cannot mistake
-point-in-time output for adaptive behaviour.
+Every recommendation log entry still stamps `adaptive_recovery_applied` —
+`false` for every plan this component produces on its own, since it has no
+way to detect the patterns the framework looks for. That flag is set to its
+real value one layer up, in `backend/app/services/adaptive_recovery.py`.
+
+## Adaptive Recovery Framework (Component 5)
+
+Module 8 Component 5 — changing recommendation strategy after recommendations
+have gone repeatedly unheeded across consecutive check-ins, and escalating
+toward university wellbeing services when elevated stress persists regardless
+of engagement. Implemented in `backend/app/services/adaptive_recovery.py`,
+wired into `assessment_service.py` immediately after the point-in-time plan
+(§ Personalized Recommendation Engine, above) is built, and exercised by
+`backend/tests/test_adaptive_recovery.py`.
+
+**Why this lives in `backend/`, not `ml_pipeline/src/recommendation/`,
+despite ADR-001's boundary on training-only code:** the decision logic fits
+nothing, so ADR-001's letter does not forbid either location, but its spirit
+does — this component's input is live, per-user database history, a concept
+the research world's static-dataset notebooks have no notion of, and putting
+it in `ml_pipeline/` would mean importing SQLAlchemy sessions into the
+research package. Recorded formally as `ADR.md` ADR-004; this section covers
+the four decisions specific to *how* it was built, not *where*.
+
+### Catalogue restructuring: one template per feature → `[primary, alternate]`
+
+`ml_pipeline/src/recommendation/catalogue.py`'s `RECOMMENDATION_CATALOGUE`
+changed shape from `dict[str, RecommendationTemplate]` (one template per
+feature) to `dict[str, list[RecommendationTemplate]]` (`[primary, alternate]`
+per feature). This is a **breaking change to research-world code**, made
+solely so the Adaptive Recovery Framework has a genuinely different
+suggestion to switch to when a factor's primary recommendation has already
+been shown across consecutive check-ins without engagement — without
+duplicating catalogue content in `backend/`, which would let the two copies
+drift.
+
+The change is breaking in the literal sense (every caller indexing the old
+`dict[str, RecommendationTemplate]` shape would break), but not in its
+observable output: `engine.py`'s point-in-time path was updated to read
+`RECOMMENDATION_CATALOGUE[feature][0]` — the primary template — and nothing
+else about its selection logic changed. This was verified, not assumed:
+`backend/tests/test_assessments.py`'s existing fixtures (predating the
+Adaptive Recovery Framework) assert the exact recommendation titles,
+actions, and rationales returned for a fixed input, and those assertions
+pass unchanged against the restructured catalogue — the point-in-time
+output is byte-identical before and after. Each alternate was also written
+to use a genuinely different mechanism from its primary (e.g. asking someone
+else's perspective instead of self-reflection), not a reworded copy of the
+same suggestion, so a student who reaches the switched recommendation is
+offered something meaningfully different, not the same advice restated.
+
+### Engagement granularity: the previous check-in's top driver, not per-factor tracking
+
+`previous_engagement` is collected once per submission — a single
+self-reported value (`yes` / `partially` / `no` / `no_previous_checkin`) —
+not one value per recommended factor. The factor-switch rule
+(`decide_adaptive_strategy` in `adaptive_recovery.py`) therefore interprets
+"engagement with it" as **engagement with the immediately preceding
+check-in's recommendation plan as a whole**, applied specifically to whether
+that plan's top-ranked (priority-1) factor repeats as the current check-in's
+top-ranked factor.
+
+This is a **stated scope decision**, not an implementation detail to be
+reverse-engineered from the code later. The alternative — tracking
+engagement separately per recommended factor — was not adopted because the
+data does not support it: the system asks one engagement question per
+check-in, not one per recommendation shown, so there is no per-factor signal
+to track. Reading a single engagement value as applying to the plan's
+leading recommendation is the most defensible mapping available given that
+constraint, since the priority-1 recommendation is the one the student is
+most likely to have acted on (or not) if they engaged with the plan at all.
+A future instrument that collected per-recommendation engagement
+(e.g. "did you try suggestion 1? suggestion 2?") would make a genuinely
+per-factor rule possible, and would be a natural extension — but is not
+something the current data collection supports, so building the rule as if
+it were would be inventing a signal the system does not have.
+
+### `HISTORY_LOOKBACK_LIMIT = 10` — a bounded-performance choice, not an empirical one
+
+`fetch_recent_history` caps how many prior check-ins it loads per decision at
+10. Unlike the recommendation engine's severity floor (§ Deriving the
+severity floor, above), this number was **not** derived from a distribution,
+a percentile, or any dataset analysis, and does not need to have been. Both
+rules this component checks require at most a streak of 3 (escalation) or 2
+(factor switch) consecutive prior check-ins; 10 is simply comfortable
+headroom over that requirement, chosen so the query stays a small, constant-
+cost `LIMIT` clause on an indexed column (`assessments.user_id`,
+`assessments.created_at`) rather than scanning a user's entire history as
+their check-in count grows over months of use. Calling this out explicitly
+matters because this project otherwise holds itself to justifying constants
+empirically (the severity floor being the clearest example) — this one is a
+plain engineering bound, and dressing it up as anything more rigorous than
+that would misrepresent it.
+
+### `previous_engagement` stored as `String(20)`, not a native enum
+
+`Assessment.previous_engagement` is a plain `String(20)` column, validated
+against `EngagementLevel` at the Pydantic schema layer rather than enforced
+as a native PostgreSQL `ENUM` type at the database layer. Reasoned in a code
+comment on the column itself
+(`backend/app/models/assessment.py`): a native Postgres enum makes adding a
+future value (e.g. a finer-grained engagement scale) an `ALTER TYPE`
+migration against a live column, which is more disruptive than a
+`String`-backed column with an added `Literal`/`Enum` member on the
+application side. Recorded here so the reasoning is not comment-only, per
+`IMPLEMENTATION_RULES.md`'s documentation expectations.
 
 ## NLP Feature Ablation Study (Experiments A–D) — `05_NLP_Ablation.ipynb`
 

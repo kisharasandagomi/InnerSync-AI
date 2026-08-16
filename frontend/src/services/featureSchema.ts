@@ -166,3 +166,15 @@ export function defaultAnswers(): AssessmentPayload {
     FEATURE_FIELDS.map((f) => [f.name, Math.round((f.min + f.max) / 2)]),
   );
 }
+
+/**
+ * Options for the Adaptive Recovery Framework's engagement question, asked as
+ * part of every submission. Values match the backend's `PreviousEngagement`
+ * literal exactly. Defaults to "no_previous_checkin" — see `AssessmentPage`.
+ */
+export const ENGAGEMENT_OPTIONS: readonly { value: string; label: string }[] = [
+  { value: "no_previous_checkin", label: "This is my first check-in" },
+  { value: "yes", label: "Yes, I tried them" },
+  { value: "partially", label: "I tried some of them" },
+  { value: "no", label: "No, I didn't get to them" },
+] as const;

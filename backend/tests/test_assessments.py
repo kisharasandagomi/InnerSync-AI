@@ -31,6 +31,9 @@ NOTEBOOK_CASE_HIGH_STRESS = {
     "social_support": 1,
     "peer_pressure": 5,
     "extracurricular_activities": 5,
+    # First submission in each of these tests (a fresh user, one call) — the
+    # honest value for a genuine first-ever check-in.
+    "previous_engagement": "no_previous_checkin",
 }
 
 EXPECTED_CLASS = 2
@@ -99,6 +102,7 @@ def test_assessment_response_shape(client: TestClient, auth_headers: dict[str, s
         "explanation",
         "recommendations",
         "is_affirmation",
+        "is_escalation",
     ):
         assert field in body, f"missing field: {field}"
 
@@ -121,6 +125,9 @@ def test_assessment_matches_notebook_output(
     assert body["stress_level_label"] == "high"
     assert body["explanation"] == EXPECTED_EXPLANATION
     assert body["is_affirmation"] is False
+    # A single first-ever submission: neither adaptive rule has history to act
+    # on, so this must reproduce the unmodified point-in-time plan exactly.
+    assert body["is_escalation"] is False
     assert [r["title"] for r in body["recommendations"]] == EXPECTED_RECOMMENDATION_TITLES
     assert [r["priority"] for r in body["recommendations"]] == [1, 2, 3]
 
@@ -155,6 +162,7 @@ def test_assessment_persists_all_three_rows(
     assert assessment is not None
     assert assessment.model_version == "v2"
     assert assessment.peer_pressure == NOTEBOOK_CASE_HIGH_STRESS["peer_pressure"]
+    assert assessment.previous_engagement == "no_previous_checkin"
 
     record = (
         db_session.query(ExplanationRecord)
@@ -173,6 +181,7 @@ def test_assessment_persists_all_three_rows(
     )
     assert len(recommendation.actions) == 3
     assert recommendation.adaptive_recovery_applied is False
+    assert recommendation.is_escalation is False
 
 
 def test_assessment_rejects_out_of_range_value(

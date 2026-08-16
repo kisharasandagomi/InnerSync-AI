@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FEATURE_FIELDS, FEATURE_NAMES, defaultAnswers } from "./featureSchema";
+import { ENGAGEMENT_OPTIONS, FEATURE_FIELDS, FEATURE_NAMES, defaultAnswers } from "./featureSchema";
 
 /**
  * Guards the model's input contract.
@@ -84,5 +84,23 @@ describe("feature schema contract", () => {
       expect(payload[field.name]).toBeGreaterThanOrEqual(field.min);
       expect(payload[field.name]).toBeLessThanOrEqual(field.max);
     }
+  });
+});
+
+describe("adaptive recovery engagement contract", () => {
+  /**
+   * Mirrors backend/app/schemas/assessment.py's PreviousEngagement literal
+   * exactly. A value present here but not accepted by the backend (or vice
+   * versa) would surface as a 422 the student can't do anything about.
+   */
+  const BACKEND_ENGAGEMENT_VALUES = ["yes", "partially", "no", "no_previous_checkin"];
+
+  it("offers exactly the values the backend accepts", () => {
+    const offered = ENGAGEMENT_OPTIONS.map((o) => o.value).sort();
+    expect(offered).toEqual([...BACKEND_ENGAGEMENT_VALUES].sort());
+  });
+
+  it("defaults the form to 'first check-in', not an engaged/unengaged guess", () => {
+    expect(ENGAGEMENT_OPTIONS[0].value).toBe("no_previous_checkin");
   });
 });

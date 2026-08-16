@@ -14,6 +14,7 @@ from the model as leaking the target label (ADR-003).
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from enum import Enum
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -24,6 +25,23 @@ from app.database.base import Base
 
 # JSONB on PostgreSQL, plain JSON elsewhere (e.g. SQLite in tests).
 JSONType = JSON().with_variant(JSONB(), "postgresql")
+
+
+class EngagementLevel(str, Enum):
+    """Self-reported engagement with the *previous* check-in's recommendations.
+
+    Collected as part of every assessment submission — not a separate flow —
+    because the Adaptive Recovery Framework
+    (`backend/app/services/adaptive_recovery.py`) needs an engagement signal
+    and this system has no way to observe real-world behaviour directly.
+    `NO_PREVIOUS_CHECKIN` covers a student's first-ever assessment; the
+    frontend defaults to it so a returning student has to actively change it.
+    """
+
+    YES = "yes"
+    PARTIALLY = "partially"
+    NO = "no"
+    NO_PREVIOUS_CHECKIN = "no_previous_checkin"
 
 
 class Assessment(Base):
@@ -62,6 +80,14 @@ class Assessment(Base):
     predicted_class: Mapped[int] = mapped_column(Integer, nullable=False)
     predicted_probabilities: Mapped[dict] = mapped_column(JSONType, nullable=False)
     model_version: Mapped[str] = mapped_column(String(16), nullable=False)
+
+    # --- Adaptive Recovery Framework input ---
+    # Stored as a plain String, not a native Postgres ENUM, so adding a value
+    # later is a code change, not a migration that alters a DB type. Validated
+    # against EngagementLevel at the Pydantic schema layer. Reasoning recorded
+    # in full in docs/research/methodology.md § Adaptive Recovery Framework
+    # (Component 5), so this comment is not the only place it lives.
+    previous_engagement: Mapped[str] = mapped_column(String(20), nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="assessments")  # noqa: F821
     explanation: Mapped["ExplanationRecord | None"] = relationship(  # noqa: F821

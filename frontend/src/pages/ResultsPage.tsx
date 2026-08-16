@@ -4,11 +4,12 @@ import type { AssessmentResult } from "../services/api";
 /**
  * Displays the backend's response.
  *
- * The explanation paragraph and every recommendation string are rendered
- * VERBATIM. That text was generated server-side and passed the vocabulary
- * safety gate there (no clinical language, no ML terminology). Re-wording,
- * truncating, or re-casing it client-side would bypass that check, so this
- * component only ever places the strings into the DOM.
+ * The explanation paragraph and every recommendation/affirmation/escalation
+ * string are rendered VERBATIM. That text was generated server-side and
+ * passed the vocabulary safety gate there (no clinical language, no ML
+ * terminology). Re-wording, truncating, or re-casing it client-side would
+ * bypass that check, so this component only ever places the strings into the
+ * DOM.
  */
 export function ResultsPage() {
   const location = useLocation();
@@ -39,44 +40,64 @@ export function ResultsPage() {
         </p>
       </section>
 
-      <section className="mt-8">
-        <h2 className="text-sm font-semibold tracking-tight text-ink">
-          Suggested next steps
-        </h2>
-
-        {result.is_affirmation ? (
-          <p className="mt-3 rounded-lg border border-line bg-accent-soft/40 p-5 text-[15px] leading-7 text-ink">
-            {result.affirmation}
+      {result.is_escalation ? (
+        // Foregrounded but not alarming: a clearly distinct card (accent
+        // left border, no red/warning colour — ethical_framework.md asks for
+        // "a clear, non-alarming prompt"), placed where suggestions normally
+        // go rather than appended below them, since this replaces the
+        // automated suggestions rather than supplementing them.
+        <section
+          className="mt-8 rounded-lg border border-accent bg-accent-soft/60 p-6"
+          role="note"
+          aria-label="Wellbeing service signpost"
+        >
+          <h2 className="text-sm font-semibold tracking-tight text-accent-strong">
+            Worth reaching out
+          </h2>
+          <p className="mt-3 whitespace-pre-line text-[15px] leading-7 text-ink">
+            {result.escalation_message}
           </p>
-        ) : (
-          <ol className="mt-3 space-y-4">
-            {result.recommendations.map((rec) => (
-              <li
-                key={rec.priority}
-                className="rounded-lg border border-line bg-card p-5"
-              >
-                <div className="flex items-baseline gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent-strong"
-                  >
-                    {rec.priority}
-                  </span>
-                  <h3 className="text-[15px] font-medium text-ink">
-                    {rec.title}
-                  </h3>
-                </div>
-                <p className="mt-2 pl-9 text-[15px] leading-7 text-ink">
-                  {rec.action}
-                </p>
-                <p className="mt-2 pl-9 text-sm leading-6 text-ink-soft">
-                  {rec.rationale}
-                </p>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+        </section>
+      ) : (
+        <section className="mt-8">
+          <h2 className="text-sm font-semibold tracking-tight text-ink">
+            Suggested next steps
+          </h2>
+
+          {result.is_affirmation ? (
+            <p className="mt-3 rounded-lg border border-line bg-accent-soft/40 p-5 text-[15px] leading-7 text-ink">
+              {result.affirmation}
+            </p>
+          ) : (
+            <ol className="mt-3 space-y-4">
+              {result.recommendations.map((rec) => (
+                <li
+                  key={rec.priority}
+                  className="rounded-lg border border-line bg-card p-5"
+                >
+                  <div className="flex items-baseline gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent-strong"
+                    >
+                      {rec.priority}
+                    </span>
+                    <h3 className="text-[15px] font-medium text-ink">
+                      {rec.title}
+                    </h3>
+                  </div>
+                  <p className="mt-2 pl-9 text-[15px] leading-7 text-ink">
+                    {rec.action}
+                  </p>
+                  <p className="mt-2 pl-9 text-sm leading-6 text-ink-soft">
+                    {rec.rationale}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      )}
 
       <div className="mt-8 flex items-center gap-4">
         <Link

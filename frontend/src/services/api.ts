@@ -12,6 +12,14 @@ import type { AssessmentPayload } from "./featureSchema";
 
 const BASE = "/api";
 
+/**
+ * Self-reported engagement with the *previous* check-in's recommendations.
+ * Mirrors the backend's `PreviousEngagement` literal exactly — see
+ * `backend/app/schemas/assessment.py`. Collected as part of every submission
+ * so the Adaptive Recovery Framework has a signal to act on.
+ */
+export type PreviousEngagement = "yes" | "partially" | "no" | "no_previous_checkin";
+
 export interface RecommendationItem {
   priority: number;
   title: string;
@@ -29,6 +37,14 @@ export interface AssessmentResult {
   recommendations: RecommendationItem[];
   is_affirmation: boolean;
   affirmation: string | null;
+  /**
+   * True when sustained high stress across consecutive check-ins replaced
+   * the normal recommendations with a wellbeing-service signpost, regardless
+   * of engagement. Mutually exclusive with `is_affirmation` and with a
+   * non-empty `recommendations` list.
+   */
+  is_escalation: boolean;
+  escalation_message: string | null;
 }
 
 export class ApiError extends Error {
@@ -94,10 +110,20 @@ export function login(email: string, password: string) {
   });
 }
 
-export function submitAssessment(answers: AssessmentPayload, token: string) {
+export function submitAssessment(
+  answers: AssessmentPayload,
+  previousEngagement: PreviousEngagement,
+  token: string,
+) {
   return request<AssessmentResult>(
     "/assessments",
-    { method: "POST", body: JSON.stringify(answers) },
+    {
+      method: "POST",
+      // One flat object: the backend's AssessmentCreateRequest has
+      // previous_engagement as a sibling field alongside the 14 features,
+      // not a nested one.
+      body: JSON.stringify({ ...answers, previous_engagement: previousEngagement }),
+    },
     token,
   );
 }

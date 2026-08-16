@@ -121,3 +121,60 @@ sequence remains auditable.
   cross-validation and held-out testing had all passed over. See
   `methodology.md` § Data Quality / Leakage Finding for the connection to the
   Tariq et al. (2025) retraction discussed in Chapter 2.
+
+## ADR-004: Adaptive Recovery Framework implemented in `backend/`, not `ml_pipeline/src/recommendation/`
+
+**Context**: Module 8 Component 5 (changing recommendation strategy across
+consecutive check-ins; escalating toward university wellbeing services under
+sustained high stress) needs to reason over a student's own history of prior
+check-ins. ADR-001 draws a hard line at training: `backend/app/` may only
+*load* what `ml_pipeline/` produces, never fit anything. Read narrowly, that
+line doesn't forbid putting this component in either location, since no model
+fitting is involved anywhere in it — the decision it drives is a rule
+evaluated over stored history, not a learned one.
+
+ADR-001's *spirit*, not just its letter, was the deciding factor. This
+component's central input is live, per-user assessment history from the
+production database — a concept the research world has no notion of.
+`ml_pipeline/` notebooks operate on static, anonymised training datasets via a
+`Session`-free API; they do not import SQLAlchemy, do not hold a database
+connection, and are not exercised against a live schema. Placing the adaptive
+logic in `ml_pipeline/src/recommendation/` would require importing SQLAlchemy
+sessions and the `Assessment`/`Recommendation` ORM models into the research
+package to query that history — which inverts the one direction ADR-001
+actually specifies (`ml_pipeline/` must never import from `backend/`), not
+merely brushes up against it.
+
+**Decision**: The Adaptive Recovery Framework is implemented as
+`backend/app/services/adaptive_recovery.py`. It **imports from**
+`ml_pipeline.src.recommendation` — the catalogue's alternate templates,
+`SUSTAINED_HIGH_STRESS_ESCALATION_MESSAGE`, and the vocabulary safety gate —
+exactly as the point-in-time engine's own consumers do, so recommendation
+content and its safety guarantees are shared with the research-world code
+rather than duplicated in `backend/`. The decision logic itself
+(`decide_adaptive_strategy`) is a pure function over a `Sequence[CheckInSummary]`
+with no database access, isolating the one part of this component that is
+genuinely unit-testable in the same way as the rest of the research-world
+logic, even though the module as a whole lives outside it.
+
+**Consequences**:
+
+- `ml_pipeline/src/recommendation/catalogue.py`'s `RECOMMENDATION_CATALOGUE`
+  was restructured from one template per feature to `[primary, alternate]`,
+  specifically so `adaptive_recovery.py` has a second template to switch to
+  without duplicating catalogue content in `backend/`. This is a breaking
+  change to research-world code made to support a production-world consumer —
+  documented, with its verification, in `methodology.md` § Adaptive Recovery
+  Framework (Component 5).
+- The database-querying half of this component (`fetch_recent_history` and
+  the persistence in `assessment_service.py`) cannot be exercised by
+  `ml_pipeline/`'s notebook-based evaluation workflow. It is covered instead
+  by `backend/tests/test_adaptive_recovery.py`, including one real
+  multi-submission sequence through the live `/assessments` endpoint against
+  a real database — the same standard `IMPLEMENTATION_RULES.md` sets for
+  every API route.
+- Any future component with the same shape — a rule that consumes both a
+  `ml_pipeline/`-produced artifact or catalogue *and* live per-user database
+  state — should default to this same placement (`backend/`, importing from
+  `ml_pipeline/src/`) rather than re-litigating the ADR-001 boundary each
+  time.
