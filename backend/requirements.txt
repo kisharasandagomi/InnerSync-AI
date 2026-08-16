@@ -1,4 +1,33 @@
 # Backend (Production World) dependencies.
-# Populated when backend implementation begins (PROJECT_ROADMAP.md Phase 6).
-# Mirrors the relevant subset of environment.yml's pip section for the
-# containerized backend build.
+# Mirrors the relevant subset of environment.yml. Install into the `mainks`
+# environment, or a container built from this file.
+
+fastapi==0.141.1
+uvicorn==0.52.1
+pydantic==2.13.4
+sqlalchemy==2.0.51
+alembic==1.18.5
+psycopg[binary]==3.3.4
+python-jose==3.5.0
+bcrypt==5.0.0
+
+# NOTE: passlib is NOT used. passlib 1.7.4 reads bcrypt.__about__, removed in
+# bcrypt 4.1+, so the installed versions are incompatible and passlib has been
+# unmaintained since 2020. app/core/security.py calls bcrypt directly.
+python-multipart==0.0.32
+python-dotenv==1.2.2
+
+# NOTE: pydantic-settings and email-validator are deliberately NOT used.
+# Neither is present in the mainks environment, and both are avoidable:
+# config is read via python-dotenv + os.environ, and email validation uses a
+# constrained str. Keeps the dependency surface smaller.
+
+# Artifact loading + explanation/recommendation logic imported from ml_pipeline
+joblib==1.5.3
+numpy==2.4.6
+scikit-learn==1.9.0
+shap==0.52.0
+
+# Testing
+pytest==9.1.1
+httpx==0.28.1
