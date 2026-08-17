@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { AssessmentPage } from "./pages/AssessmentPage";
 import { AuthPage } from "./pages/AuthPage";
+import { ChatPage } from "./pages/ChatPage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { useAuth } from "./services/auth";
@@ -45,6 +46,14 @@ export function App() {
           element={
             <RequireAuth>
               <ProgressPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <RequireAuth>
+              <ChatPage />
             </RequireAuth>
           }
         />

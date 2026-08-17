@@ -178,3 +178,33 @@ logic, even though the module as a whole lives outside it.
   state — should default to this same placement (`backend/`, importing from
   `ml_pipeline/src/`) rather than re-litigating the ADR-001 boundary each
   time.
+
+## ADR-005: Default Gemini model changed from `gemini-flash-latest` to `gemini-flash-lite-latest`
+
+**Context**: `app.chatbot.service` was built against `gemini-flash-latest` —
+an alias Google maintains to always point at its current default flash
+model, chosen specifically to avoid hardcoding a dated model name that later
+gets deprecated. During live verification of Module 3 (2026-08-17), that
+alias was returning live HTTP 503 "high demand" responses on every call. The
+graceful-degradation path handled this correctly (a calm canned reply, not a
+crash — see `docs/research/methodology.md` § Conversational Interaction
+Layer), but it meant no genuine reply was reachable for the live demo.
+Direct testing against several model names showed `gemini-2.5-flash` and
+`gemini-2.5-flash-lite` now return HTTP 404 ("no longer available to new
+users") — deprecated since this project's environment was last set up —
+while `gemini-flash-lite-latest` and `gemini-3.5-flash` both responded
+successfully at the same moment.
+
+**Decision**: Default `GEMINI_MODEL` changed to `gemini-flash-lite-latest`
+(`backend/app/core/config.py`). Kept as a `-latest` alias rather than
+pinning to `gemini-3.5-flash`, for the same reason the original choice used
+an alias: a pinned version name is exactly what just went stale. Overridable
+via the `GEMINI_MODEL` environment variable without a code change, per
+`IMPLEMENTATION_RULES.md`'s config-not-hardcoded rule.
+
+**Consequences**: The API surface (`GEMINI_MODEL` env var, `Settings.gemini_model`)
+is unchanged — only the default value moved. This is a live external
+dependency outside this project's control; a future session may need to
+repeat this same check if `gemini-flash-lite-latest` itself becomes
+unavailable or degraded. No code change is needed to respond to that beyond
+setting `GEMINI_MODEL` in `backend/.env`.

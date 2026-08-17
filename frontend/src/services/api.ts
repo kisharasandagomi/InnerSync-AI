@@ -155,3 +155,38 @@ export function getAssessmentHistory(token: string) {
     token,
   );
 }
+
+/**
+ * One chatbot message (Module 3), either role. `fallback_reason` is set only
+ * on an "assistant" message that is a fixed canned reply rather than
+ * Gemini's own output (safety-gate rejection, rate limit, or an outage) —
+ * see `backend/app/models/chat_message.py`. Rendered identically either way;
+ * this page does not treat it as an error state, since the fallback text is
+ * itself a normal, safe reply to show.
+ */
+export interface ChatMessageItem {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+  fallback_reason: string | null;
+}
+
+export interface ChatTurnResult {
+  user_message: ChatMessageItem;
+  assistant_message: ChatMessageItem;
+}
+
+/** The caller's own recent chat messages, oldest first. Read-only. */
+export function getChatHistory(token: string) {
+  return request<ChatMessageItem[]>("/chat/messages", { method: "GET" }, token);
+}
+
+/** Send one chat message and get the reply. */
+export function sendChatMessage(content: string, token: string) {
+  return request<ChatTurnResult>(
+    "/chat/messages",
+    { method: "POST", body: JSON.stringify({ content }) },
+    token,
+  );
+}

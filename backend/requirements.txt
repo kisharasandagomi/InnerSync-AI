@@ -28,6 +28,14 @@ numpy==2.4.6
 scikit-learn==1.9.0
 shap==0.52.0
 
+# Chatbot (Module 3): Gemini API client, plus the ml_pipeline NLP sentiment
+# scorers (app/chatbot/sentiment.py reuses ml_pipeline/src/nlp/lexicon_scores.py
+# rather than re-implementing it — see that module's docstring).
+google-genai==1.75.0
+pandas==3.0.5
+textblob==0.20.1
+vaderSentiment==3.3.2
+
 # Testing
 pytest==9.1.1
 httpx==0.28.1

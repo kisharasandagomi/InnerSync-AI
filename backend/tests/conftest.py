@@ -26,6 +26,14 @@ for path in (str(BACKEND_DIR), str(REPO_ROOT)):
 # Must be set before app.core.config is imported anywhere.
 os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
 os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-key-not-for-production-use")
+# Forces GEMINI_API_KEY empty for the whole test session regardless of what a
+# developer's real backend/.env happens to contain — get_settings() reads
+# that file with load_dotenv(..., override=False), so without this line the
+# test suite's chatbot-config-error test would silently pass or fail based on
+# local machine state rather than the code under test. Discovered when adding
+# a real key to backend/.env for live verification made
+# test_missing_gemini_api_key_returns_a_clear_503 fail for the wrong reason.
+os.environ.setdefault("GEMINI_API_KEY", "")
 
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import create_engine  # noqa: E402

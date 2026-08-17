@@ -19,6 +19,12 @@ export function Layout({ children }: { children: ReactNode }) {
           {isAuthenticated && (
             <div className="flex items-center gap-3 text-xs text-ink-faint">
               <Link
+                to="/chat"
+                className="hidden rounded-md px-2 py-1.5 text-ink-soft transition-colors hover:bg-accent-soft hover:text-accent-strong sm:inline"
+              >
+                Chat
+              </Link>
+              <Link
                 to="/progress"
                 className="hidden rounded-md px-2 py-1.5 text-ink-soft transition-colors hover:bg-accent-soft hover:text-accent-strong sm:inline"
               >

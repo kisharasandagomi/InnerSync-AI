@@ -40,6 +40,15 @@ class Settings:
         access_token_expire_minutes: Access-token lifetime.
         artifacts_dir: Where the Research World writes versioned artifacts.
         model_filename: Version-stamped model artifact to load.
+        gemini_api_key: Gemini API key for the chatbot (Module 3). Deliberately
+            **not** required at process startup, unlike `jwt_secret_key` —
+            leaving it unset must not take down assessments, auth, or the rest
+            of the app. `app.chatbot.gemini_client.get_gemini_client()` raises
+            a clear `ChatConfigError` the first time the chat feature is
+            actually used without one, rather than this module failing
+            silently or the chatbot falling back to a hardcoded reply. See
+            `docs/research/methodology.md` § Conversational Interaction Layer.
+        gemini_model: Gemini model name for chat generation.
     """
 
     database_url: str
@@ -48,6 +57,8 @@ class Settings:
     access_token_expire_minutes: int
     artifacts_dir: Path
     model_filename: str
+    gemini_api_key: str
+    gemini_model: str
 
 
 def _require(name: str) -> str:
@@ -101,4 +112,14 @@ def get_settings() -> Settings:
         else REPO_ROOT / "ml_pipeline" / "artifacts",
         model_filename=os.environ.get("MODEL_FILENAME", "stress_model_v2.pkl").strip()
         or "stress_model_v2.pkl",
+        # Not `_require()`-d: see the `gemini_api_key` docstring above for why
+        # an absent key must not block startup of the rest of the app.
+        gemini_api_key=os.environ.get("GEMINI_API_KEY", "").strip(),
+        # "gemini-flash-latest" was tried first (an alias Google keeps
+        # pointed at its current default flash model, to avoid hardcoding a
+        # version that later gets deprecated — see ADR-005) but was
+        # returning live HTTP 503 "high demand" errors as of 2026-08-17; the
+        # lite alias was healthy at the same moment, so it is the default
+        # until that settles. Override via GEMINI_MODEL without a code change.
+        gemini_model=os.environ.get("GEMINI_MODEL", "").strip() or "gemini-flash-lite-latest",
     )

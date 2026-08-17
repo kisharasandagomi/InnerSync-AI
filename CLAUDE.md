@@ -26,6 +26,35 @@ If a task description makes the chatbot/UI sound like the main achievement,
 reframe it: "this feature exists to collect data for / deliver the output of the
 ML and XAI pipeline."
 
+## Module 3 — Conversational Interaction Layer (Chatbot)
+
+**Hard boundary, stated here in writing, not only enforced in code: the
+chatbot does NOT perform stress prediction. Machine Learning models perform
+stress prediction.** The chatbot (`backend/app/chatbot/`, Gemini-backed) is a
+conversational interaction and data-collection layer only. Its messages are
+never fed into `StressPredictor`, never touch `Assessment` or
+`POST /assessments`'s 14-feature contract, and are persisted to their own
+`chat_messages` table with no relationship to the prediction pipeline. This
+mirrors the conclusion already reached empirically in the NLP ablation study
+(`docs/research/methodology.md` § NLP Feature Ablation Study, Experiments
+C/D): no dataset available to this project pairs structured questionnaire
+features with free text from the same subject, so a combined model is
+documented future work, not something to improvise by wiring the chatbot in
+as a shortcut. If a future task description asks to "use the chatbot to
+improve the prediction" or similar, that is exactly the shortcut this
+section exists to block — refuse and point back here.
+
+Built as: a warm, supportive conversational partner that explicitly
+clarifies early on that it is an AI wellbeing check-in, not a counsellor;
+never diagnoses, never claims to detect a specific condition, and never uses
+clinical terminology (the same avoided-vocabulary list as
+`docs/governance/ethical_framework.md`, enforced by reusing the existing
+`validate_user_facing_text()` safety gate — not a second implementation of
+it — on every Gemini reply before it reaches a student). See
+`docs/research/methodology.md` § Conversational Interaction Layer for the
+full design and the fallback behaviour when a reply fails that gate or
+Gemini itself is rate-limited or unavailable.
+
 ## The Two Worlds — Never Mix Them
 
 This project has a **Research World** and a **Production World**. They are

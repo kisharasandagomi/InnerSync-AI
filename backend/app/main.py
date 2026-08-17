@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from app.api import assessments, auth
+from app.api import assessments, auth, chat
 
 app = FastAPI(
     title="InnerSync AI",
@@ -21,6 +21,7 @@ app = FastAPI(
 
 app.include_router(auth.router)
 app.include_router(assessments.router)
+app.include_router(chat.router)
 
 
 @app.get("/health", tags=["meta"])

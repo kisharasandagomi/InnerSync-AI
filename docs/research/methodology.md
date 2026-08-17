@@ -820,6 +820,120 @@ migration against a live column, which is more disruptive than a
 application side. Recorded here so the reasoning is not comment-only, per
 `IMPLEMENTATION_RULES.md`'s documentation expectations.
 
+## Conversational Interaction Layer (Module 3)
+
+A Gemini-backed chatbot, `backend/app/chatbot/` (`gemini_client.py`,
+`service.py`, `prompts.py`, `sentiment.py`), fronted by
+`GET`/`POST /chat/messages` and `frontend/src/pages/ChatPage.tsx`. Persists
+to a single new table, `chat_messages` (role, content, timestamp,
+`fallback_reason`) — no `Conversation`/session table; continuity is just
+chronological order per user, and a session boundary for the turn cap below
+is inferred from a gap between timestamps rather than tracked as a
+persisted field (see `app/models/chat_message.py`'s module docstring).
+
+### The boundary this component must not cross
+
+**Restated here in the same terms as `CLAUDE.md`, because it is the easiest
+rule in this component to violate by accident:** the chatbot does not
+perform stress prediction. `app/chatbot/service.py` never imports
+`app.ml.predictor`, never calls `StressPredictor.predict()`, and never
+touches `Assessment` or `POST /assessments`'s 14-feature contract. This is
+not a hypothetical risk avoided by discipline alone — it is the same
+conclusion this project already reached empirically in § NLP Feature
+Ablation Study, above: Experiments C and D (a model combining structured
+questionnaire features with free text from the same subject) cannot run on
+any data available to this project, because no such paired dataset exists.
+Wiring live chatbot text into the trained Random Forest here would not be
+implementing that future work — it would be fabricating the same kind of
+cross-subject relationship Experiments C/D's section explicitly documented
+as a worse methodological error than the target-leakage problem in ADR-003,
+just done to a live user's own data instead of two different research
+subjects. The chatbot's sole relationship to the prediction pipeline is that
+both exist in the same product; there is no data path between them.
+
+### Safety: reusing the gate, not rebuilding it
+
+Every Gemini reply is checked by the **same** `validate_user_facing_text()`
+gate that guards the explanation and recommendation text (§ Human-Centered
+Explanation Generator, above), imported directly from
+`ml_pipeline.src.explainability.generator` rather than re-implemented. This
+was a deliberate reuse decision: a second implementation of the
+avoided-vocabulary list would inevitably drift from the first, and an LLM's
+free-form output is exactly the case this gate was built to catch — unlike
+the template-based explanation generator, Gemini's output cannot be
+guaranteed safe by construction, so it needs the same runtime check applied
+to unpredictable text.
+
+A reply that fails the gate is **not retried**. `_get_validated_reply()` in
+`service.py` decides once and substitutes a fixed canned reply
+(`SAFETY_FALLBACK_REPLY` in `app/chatbot/prompts.py`), persisted like a
+genuine turn so the conversation stays coherent, tagged
+`fallback_reason="safety_gate_rejected"` for audit. The rejected raw draft
+is never persisted anywhere, never logged, and never reaches the student in
+any form — verified directly in
+`backend/tests/test_chatbot.py::test_safety_gate_catches_and_replaces_an_unsafe_reply`,
+which engineers a deliberately diagnostic-sounding Gemini draft and asserts
+neither the response body nor the persisted row contains it.
+
+The system prompt (`SYSTEM_PROMPT` in `prompts.py`) independently instructs
+Gemini toward the same rules — warm and supportive tone; never diagnose or
+name a condition; never use clinical vocabulary; never estimate or state a
+stress level, since that is the prediction pipeline's job, not the
+chatbot's; clarify early that this is an AI check-in, not a counsellor; and
+escalate calmly toward university wellbeing services on anything that sounds
+urgent. The prompt and the gate are deliberately two independent layers,
+not one relying on the other: the prompt reduces how often the gate needs to
+intervene, but the gate is what actually guarantees the boundary, since a
+prompt is a request to the model, not an enforceable constraint on it. The
+"AI check-in, not a counsellor" disclaimer additionally does not rely on the
+model remembering to say it at all — `ChatPage.tsx` always renders a fixed,
+non-LLM, non-persisted introductory bubble stating this before any real
+conversation turn, so the disclaimer is guaranteed regardless of what Gemini
+does.
+
+### Cost and rate-limit safety
+
+Two independent mechanisms, for two different risks:
+
+1. **`MAX_TURNS_PER_SESSION` (30).** Caps how long one inferred session can
+   run before the student is told, in-conversation, that they have reached
+   the limit and pointed toward university wellbeing services — checked
+   before any Gemini call is made, so an exhausted session costs nothing
+   further. This guards against one runaway conversation consuming a
+   disproportionate share of the free tier's per-minute budget, not a claim
+   about how long a supportive conversation should be.
+2. **Graceful handling of Gemini's own HTTP 429.** A rate-limit response
+   from Gemini itself is caught and replaced with a fixed, calm
+   in-conversation reply (`RATE_LIMIT_FALLBACK_REPLY`), never a raw error
+   surfaced to the student.
+
+A third, unrelated failure mode is handled differently on purpose: an
+invalid or revoked `GEMINI_API_KEY` (Gemini's HTTP 401/403) is treated as a
+**configuration** problem, not a runtime one — it propagates as
+`ChatConfigError` and surfaces as an HTTP 503 with an explicit detail
+message, exactly like a wholly missing key. Per `CLAUDE.md`, papering over a
+missing or invalid key with a hardcoded fallback reply would hide a real
+deployment problem behind what looks like normal chatbot behaviour; this
+component refuses to do that.
+
+### Sentiment logging (supplementary, non-model-facing)
+
+`app/chatbot/sentiment.py` scores each student message with the same VADER
+and TextBlob lexicons already built for Experiment B (§ NLP Feature Ablation
+Study), reusing `ml_pipeline/src/nlp/lexicon_scores.py` directly. This is
+descriptive evidence-gathering only, in the same spirit as the faithfulness
+logging elsewhere in this system: the scores are never returned to the
+student, never fed into any model, and never influence the chatbot's reply.
+Best-effort — a scoring failure is caught and logged, never allowed to break
+a chat turn.
+
+The raw message text is deliberately never logged, only the four derived
+numbers (`vader_compound`, `textblob_polarity`, `textblob_subjectivity`,
+plus `vader_neg`/`neu`/`pos` internally). `ethical_framework.md`'s Risk
+Mitigation table names "no plaintext sensitive fields in logs" as the
+standing mitigation for a data breach, and a student's own wellbeing-chat
+text is precisely the sensitive field that protects.
+
 ## Progress Monitoring Dashboard (Module 9/10)
 
 A read-only trend view over a student's own check-in history, backed by
