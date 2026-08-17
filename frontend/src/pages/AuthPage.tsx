@@ -26,7 +26,7 @@ export function AuthPage() {
       }
       const { access_token } = await login(email, password);
       signIn(access_token, email);
-      navigate("/assessment");
+      navigate("/");
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -43,14 +43,14 @@ export function AuthPage() {
       <h1 className="text-xl font-semibold tracking-tight text-ink">
         {mode === "login" ? "Sign in" : "Create an account"}
       </h1>
-      <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+      <p className="mt-2 text-base leading-relaxed text-ink-soft">
         Your check-in answers are stored against your account so you can look back
         at them. They are not shared with your university.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-ink">
+          <label htmlFor="email" className="block text-base font-medium text-ink">
             Email
           </label>
           <input
@@ -61,13 +61,13 @@ export function AuthPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             placeholder="you@university.ac.uk"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-ink">
+          <label htmlFor="password" className="block text-base font-medium text-ink">
             Password
           </label>
           <input
@@ -80,15 +80,15 @@ export function AuthPage() {
             maxLength={72}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-base text-ink focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           {mode === "register" && (
-            <p className="mt-1 text-xs text-ink-faint">At least 8 characters.</p>
+            <p className="mt-1 text-sm text-ink-faint">At least 8 characters.</p>
           )}
         </div>
 
         {error && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-base text-danger">
             {error}
           </p>
         )}
@@ -96,7 +96,7 @@ export function AuthPage() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          className="w-full rounded-md bg-accent px-4 py-2.5 text-base font-medium text-white transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           {busy
             ? "Please wait…"
@@ -106,7 +106,7 @@ export function AuthPage() {
         </button>
       </form>
 
-      <p className="mt-5 text-sm text-ink-soft">
+      <p className="mt-5 text-base text-ink-soft">
         {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
         <button
           type="button"

@@ -11,7 +11,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="border-b border-line bg-card">
         <div className="mx-auto w-full max-w-3xl px-6 py-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-[15px] font-semibold tracking-tight text-ink">
+            <p className="text-base font-semibold tracking-tight text-ink">
               InnerSync
             </p>
             <p className="text-xs text-ink-faint">Wellbeing check-in</p>
@@ -46,7 +46,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">{children}</main>
 
       <footer className="border-t border-line px-6 py-5">
-        <p className="mx-auto max-w-3xl text-xs leading-relaxed text-ink-faint">
+        <p className="mx-auto max-w-3xl text-sm leading-relaxed text-ink-faint">
           InnerSync offers wellbeing support and is not a diagnostic tool. It does
           not replace a doctor, counsellor, or your university wellbeing service.
           If you are struggling, please talk to someone.

@@ -78,7 +78,7 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
   if (history.length === 0) {
     return (
       <section className="mt-6 rounded-lg border border-line bg-card p-6">
-        <p className="text-[15px] leading-7 text-ink">
+        <p className="text-base leading-7 text-ink">
           You haven't completed a check-in yet.
         </p>
         <Link
@@ -95,7 +95,7 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
     const only = history[0];
     return (
       <section className="mt-6 rounded-lg border border-line bg-card p-6">
-        <p className="text-[15px] leading-7 text-ink">
+        <p className="text-base leading-7 text-ink">
           You've completed one check-in so far, on{" "}
           {formatDate(only.created_at)}, which came out{" "}
           <span className="font-medium text-accent-strong">
@@ -121,7 +121,7 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
   return (
     <>
       <section className="mt-6 rounded-lg border border-line bg-card p-6">
-        <p className="text-[15px] leading-7 text-ink">{summary}</p>
+        <p className="text-base leading-7 text-ink">{summary}</p>
       </section>
 
       <section
@@ -134,7 +134,7 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
               key={item.assessment_id}
               className="flex shrink-0 flex-col items-center gap-2"
             >
-              <span className="text-[11px] font-medium text-ink-soft">
+              <span className="text-xs font-medium text-ink-soft">
                 {levelWord(item.stress_level)}
               </span>
               <div
@@ -143,7 +143,7 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
                 role="img"
                 aria-label={`${formatDate(item.created_at)}: ${levelWord(item.stress_level)}`}
               />
-              <span className="text-[11px] text-ink-faint">
+              <span className="text-xs text-ink-faint">
                 {formatShortDate(item.created_at)}
               </span>
             </div>
@@ -162,7 +162,7 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
               className="rounded-lg border border-line bg-card p-5"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <p className="text-[15px] font-medium text-ink">
+                <p className="text-base font-medium text-ink">
                   {formatDate(item.created_at)} —{" "}
                   <span className="text-accent-strong">
                     {item.stress_level_label}
@@ -170,12 +170,12 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
                 </p>
                 <div className="flex gap-2">
                   {item.is_escalation && (
-                    <span className="rounded-full border border-accent bg-accent-soft/60 px-2 py-0.5 text-[11px] text-accent-strong">
+                    <span className="rounded-full border border-accent bg-accent-soft/60 px-2 py-0.5 text-xs text-accent-strong">
                       Pointed toward wellbeing services
                     </span>
                   )}
                   {!item.is_escalation && item.adaptive_recovery_applied && (
-                    <span className="rounded-full border border-line bg-accent-soft/40 px-2 py-0.5 text-[11px] text-ink-soft">
+                    <span className="rounded-full border border-line bg-accent-soft/40 px-2 py-0.5 text-xs text-ink-soft">
                       Suggestions adjusted from last time
                     </span>
                   )}

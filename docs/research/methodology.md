@@ -934,6 +934,67 @@ Mitigation table names "no plaintext sensitive fields in logs" as the
 standing mitigation for a data breach, and a student's own wellbeing-chat
 text is precisely the sensitive field that protects.
 
+## Chat-Driven Check-In Delivery
+
+A UX change, based on direct user feedback: the chat interface
+(`frontend/src/pages/ChatPage.tsx`) is now the primary way a student
+completes a check-in, asking the same 14 `feature_schema.json` questions one
+at a time as sequential chat messages, instead of requiring the slider form
+up front. This is a **delivery-layer change only** — `POST /assessments`,
+its 14-feature contract, the ML pipeline, SHAP, the explanation generator,
+the recommendation engine, and the safety gate are all unchanged.
+
+### The LLM has no role in capturing answers
+
+Each question is answered through a bounded quick-select control rendered
+inside the chat bubble — chips for a small integer range, a slider with an
+explicit confirm step for the one wide-range field (`self_esteem`,
+0-30) — never free text interpreted by Gemini into a value. This is the
+same "no LLM in the prediction path" discipline documented for the chatbot
+itself (§ Conversational Interaction Layer, above) and the same reasoning
+behind the NLP ablation study's conclusion (§ NLP Feature Ablation Study,
+Experiments C/D): this project has spent real effort establishing that a
+value feeding the trained model must be precise and verifiable, not
+inferred from language. Letting an LLM interpret "yeah pretty rough
+tbh" into a `study_load` value would reintroduce exactly that risk for a
+14-feature contract that has otherwise never taken free text as input.
+
+The state machine driving the flow — `frontend/src/services/checkinFlow.ts`
+— is deliberately pure and has no dependency on React, Gemini, or the chat
+transport, mirroring how `featureSchema.ts` is the single source of truth
+the slider form already used. Both paths call the same
+`FEATURE_FIELDS`/`submitAssessment`; `checkinFlow.test.ts` asserts the
+chat-driven payload is identical in shape (14 keys, schema order, each
+value validated against that field's own bounds) to what the slider form
+has always produced, the same "guard the contract" pattern already used for
+`featureSchema.test.ts` and the assessment-history endpoint tests.
+
+### Free-form chat stays a separate, explicitly chosen mode
+
+`ChatPage.tsx` presents "Start a check-in" and "Just talk" as two distinct
+entry points (a menu screen when no mode is pre-selected via navigation
+state), never blended into one conversation. Free-form chat continues to
+never feed into the model, per the boundary in § Conversational Interaction
+Layer above — this UX change does not touch that boundary in either
+direction.
+
+### Result delivery
+
+On completion, the response from `POST /assessments` — explanation
+paragraph, then recommendations (or an affirmation, or an escalation) — is
+rendered as sequential chat bubbles using the returned text verbatim, the
+same "never re-word text that already passed the safety gate" rule
+`ResultsPage.tsx` has always followed for the slider-form path.
+
+### The slider form is kept, not replaced
+
+`AssessmentPage.tsx` (`/assessment`) is unchanged and fully functional —
+confirmed with the project owner rather than removed or unilaterally
+demoted. It is surfaced as a small, low-emphasis link ("Prefer the classic
+form?") from the new landing page (`LandingPage.tsx`, the default authed
+route at `/`) rather than as the promoted path, since chat is now the
+primary way to start a check-in.
+
 ## Progress Monitoring Dashboard (Module 9/10)
 
 A read-only trend view over a student's own check-in history, backed by

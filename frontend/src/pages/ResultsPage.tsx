@@ -35,7 +35,7 @@ export function ResultsPage() {
       </h1>
 
       <section className="mt-6 rounded-lg border border-line bg-card p-6">
-        <p className="whitespace-pre-line text-[15px] leading-7 text-ink">
+        <p className="whitespace-pre-line text-base leading-7 text-ink">
           {result.explanation}
         </p>
       </section>
@@ -54,7 +54,7 @@ export function ResultsPage() {
           <h2 className="text-sm font-semibold tracking-tight text-accent-strong">
             Worth reaching out
           </h2>
-          <p className="mt-3 whitespace-pre-line text-[15px] leading-7 text-ink">
+          <p className="mt-3 whitespace-pre-line text-base leading-7 text-ink">
             {result.escalation_message}
           </p>
         </section>
@@ -65,7 +65,7 @@ export function ResultsPage() {
           </h2>
 
           {result.is_affirmation ? (
-            <p className="mt-3 rounded-lg border border-line bg-accent-soft/40 p-5 text-[15px] leading-7 text-ink">
+            <p className="mt-3 rounded-lg border border-line bg-accent-soft/40 p-5 text-base leading-7 text-ink">
               {result.affirmation}
             </p>
           ) : (
@@ -82,11 +82,11 @@ export function ResultsPage() {
                     >
                       {rec.priority}
                     </span>
-                    <h3 className="text-[15px] font-medium text-ink">
+                    <h3 className="text-base font-medium text-ink">
                       {rec.title}
                     </h3>
                   </div>
-                  <p className="mt-2 pl-9 text-[15px] leading-7 text-ink">
+                  <p className="mt-2 pl-9 text-base leading-7 text-ink">
                     {rec.action}
                   </p>
                   <p className="mt-2 pl-9 text-sm leading-6 text-ink-soft">

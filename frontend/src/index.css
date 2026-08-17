@@ -25,12 +25,52 @@ body,
   height: 100%;
 }
 
+/* Fix for the reported "too small at 100% browser zoom" bug.
+   Root cause: nothing here previously set a base font-size, so the browser
+   default of 16px applied — and on top of that, most of the app's body copy
+   used Tailwind's `text-sm`/`text-xs` utilities (14px/12px) as if they were
+   the *default* reading size, reserving `text-base` (16px) almost nowhere.
+   The two together meant primary reading content (explanation paragraphs,
+   chat bubbles, questionnaire labels) rendered at 14-15px, which reads as
+   "too small" well before anyone hits browser zoom.
+   Fix, in two parts:
+   1. A percentage (not px) root font-size, so 1rem is deliberately larger
+      than the 16px browser default across every rem-based Tailwind utility
+      at once (spacing, radii, and type scale alike) — and because it's a
+      percentage of the browser's own font-size setting, it still respects
+      a user's OS/browser accessibility font-size preference rather than
+      overriding it, unlike a fixed px value.
+   2. Callers were also individually upgraded from `text-sm`/arbitrary
+      `text-[15px]` to `text-base` for primary reading content (see
+      Field.tsx, ResultsPage.tsx, ChatPage.tsx, AssessmentPage.tsx) — a root
+      bump alone does not fix arbitrary-pixel values, which are literal CSS
+      px and do not scale with the root font-size the way rem does. */
+html {
+  font-size: 112.5%; /* 1rem ≈ 18px at a 16px browser default */
+}
+
 body {
   background-color: var(--color-surface);
   color: var(--color-ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Calming chat theme — scoped to `.chat-shell` (ChatPage.tsx) only, not
+   site-wide. The chat is now the primary interaction surface for a
+   potentially stressed user, so it gets a deliberately softer treatment
+   than the rest of the app: a gentler surface tint and softer bubble
+   background than the site's plain white cards, generous bubble padding,
+   and rounder corners. This *extends* the existing accent hue via
+   `color-mix()` rather than introducing a second palette — still the same
+   calm, non-alarmist, no-red/amber/green colour approach as everywhere
+   else in this app (see the design-token comment above), just turned down
+   further specifically here. A full site-wide redesign is separate,
+   later work — this is intentionally scoped to one page. */
+.chat-shell {
+  --chat-surface: color-mix(in srgb, var(--color-accent-soft) 40%, var(--color-surface));
+  --chat-bubble-assistant: color-mix(in srgb, var(--color-accent-soft) 45%, white);
 }
 
 /* Respect users who have asked for reduced motion. */

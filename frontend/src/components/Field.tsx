@@ -20,10 +20,10 @@ export function ScaleField({ field, value, onChange }: ScaleFieldProps) {
   return (
     <fieldset className="border-b border-line py-5 last:border-b-0">
       <legend className="sr-only">{field.label}</legend>
-      <label htmlFor={inputId} className="block text-sm font-medium text-ink">
+      <label htmlFor={inputId} className="block text-base font-medium text-ink">
         {field.label}
       </label>
-      <p className="mt-1 text-xs text-ink-faint">{field.help}</p>
+      <p className="mt-1 text-sm text-ink-faint">{field.help}</p>
 
       {isBinary ? (
         <div className="mt-3 flex gap-2" role="group" aria-label={field.label}>
@@ -36,7 +36,7 @@ export function ScaleField({ field, value, onChange }: ScaleFieldProps) {
               type="button"
               aria-pressed={value === opt.v}
               onClick={() => onChange(field.name, opt.v)}
-              className={`rounded-md border px-4 py-1.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+              className={`rounded-md border px-4 py-2 text-base transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 value === opt.v
                   ? "border-accent bg-accent-soft font-medium text-accent-strong"
                   : "border-line text-ink-soft hover:bg-accent-soft/50"
@@ -62,7 +62,7 @@ export function ScaleField({ field, value, onChange }: ScaleFieldProps) {
             className="w-full accent-[var(--color-accent)]"
             aria-describedby={`${inputId}-value`}
           />
-          <div className="mt-1 flex items-center justify-between text-xs text-ink-faint">
+          <div className="mt-1 flex items-center justify-between text-sm text-ink-faint">
             <span>{field.lowLabel}</span>
             <span
               id={`${inputId}-value`}

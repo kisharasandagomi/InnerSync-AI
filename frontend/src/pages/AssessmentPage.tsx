@@ -64,7 +64,7 @@ export function AssessmentPage() {
       <h1 className="text-xl font-semibold tracking-tight text-ink">
         How are things at the moment?
       </h1>
-      <p className="mt-2 max-w-prose text-sm leading-relaxed text-ink-soft">
+      <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-soft">
         Fourteen quick questions. Answer for how the last week or two has felt —
         there are no right answers, and nothing here is a test.
       </p>
@@ -73,11 +73,11 @@ export function AssessmentPage() {
         <div className="rounded-lg border border-line bg-card px-6 py-5">
           <label
             htmlFor="previous-engagement"
-            className="block text-sm font-medium text-ink"
+            className="block text-base font-medium text-ink"
           >
             Did you try the suggestions from your last check-in?
           </label>
-          <p className="mt-1 text-xs text-ink-faint">
+          <p className="mt-1 text-sm text-ink-faint">
             There's no wrong answer here — this just helps keep suggestions
             useful over time.
           </p>
@@ -88,7 +88,7 @@ export function AssessmentPage() {
             onChange={(e) =>
               setPreviousEngagement(e.target.value as PreviousEngagement)
             }
-            className="mt-3 w-full rounded-md border border-line bg-card px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="mt-3 w-full rounded-md border border-line bg-card px-3 py-2 text-base text-ink focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {ENGAGEMENT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>

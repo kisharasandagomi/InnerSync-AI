@@ -3,6 +3,7 @@ import { Layout } from "./components/Layout";
 import { AssessmentPage } from "./pages/AssessmentPage";
 import { AuthPage } from "./pages/AuthPage";
 import { ChatPage } from "./pages/ChatPage";
+import { LandingPage } from "./pages/LandingPage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { useAuth } from "./services/auth";
@@ -21,9 +22,7 @@ export function App() {
       <Routes>
         <Route
           path="/"
-          element={
-            isAuthenticated ? <Navigate to="/assessment" replace /> : <AuthPage />
-          }
+          element={isAuthenticated ? <LandingPage /> : <AuthPage />}
         />
         <Route
           path="/assessment"
