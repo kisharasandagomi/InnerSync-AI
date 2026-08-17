@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../services/auth";
 
 /** Page shell: masthead, centred column, and the standing non-clinical notice. */
@@ -17,6 +18,12 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
           {isAuthenticated && (
             <div className="flex items-center gap-3 text-xs text-ink-faint">
+              <Link
+                to="/progress"
+                className="hidden rounded-md px-2 py-1.5 text-ink-soft transition-colors hover:bg-accent-soft hover:text-accent-strong sm:inline"
+              >
+                Your trends
+              </Link>
               <span className="hidden sm:inline">{email}</span>
               <button
                 type="button"

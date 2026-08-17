@@ -101,3 +101,38 @@ class AssessmentResponse(BaseModel):
         ),
     )
     escalation_message: str | None = None
+
+
+class AssessmentHistoryItem(BaseModel):
+    """One past check-in, for the Progress Monitoring Dashboard's trend view.
+
+    Deliberately carries no SHAP value, raw feature name, or numeric severity
+    score — `top_factor_phrase` is the same safety-gate-validated
+    plain-language phrase already used inside `AssessmentResponse.explanation`
+    (see `ml_pipeline/src/explainability/templates.py`'s `FEATURE_PHRASES`),
+    for that check-in's single strongest severity-axis factor. The frontend
+    renders it as supporting text next to a level, never as a chart axis
+    value.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    assessment_id: int
+    created_at: datetime
+
+    stress_level: int = Field(description="0 low, 1 moderate, 2 high")
+    stress_level_label: str
+
+    previous_engagement: PreviousEngagement
+    adaptive_recovery_applied: bool = Field(
+        description="Whether the Adaptive Recovery Framework altered this check-in's plan"
+    )
+    is_escalation: bool
+
+    top_factor_phrase: str | None = Field(
+        default=None,
+        description=(
+            "Plain-language phrase for the strongest contributing factor at "
+            "this check-in, or null if none was recorded"
+        ),
+    )

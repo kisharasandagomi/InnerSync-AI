@@ -820,6 +820,70 @@ migration against a live column, which is more disruptive than a
 application side. Recorded here so the reasoning is not comment-only, per
 `IMPLEMENTATION_RULES.md`'s documentation expectations.
 
+## Progress Monitoring Dashboard (Module 9/10)
+
+A read-only trend view over a student's own check-in history, backed by
+`GET /assessments/history` (`backend/app/api/assessments.py`) and rendered by
+`frontend/src/pages/ProgressPage.tsx`. Reuses data already persisted by every
+prior component — `Assessment.predicted_class`, `Assessment.previous_engagement`,
+`Recommendation.adaptive_recovery_applied`/`is_escalation`, and the rank-1
+entry of `ExplanationRecord.faithfulness_factors` — so this component adds no
+new write path and no new database table.
+
+### Why trend framing, not raw numbers
+
+The same explainability principle that governs every other student-facing
+surface in this system (§ Human-Centered Explanation Generator, above; see
+also `.claude/skills/explainable-ai/SKILL.md`) applies here without
+exception: a student never sees a SHAP value, a feature name, or a raw
+severity score, and that discipline does not relax just because the content
+is now a history of several check-ins instead of one. A dashboard is
+arguably a *higher*-risk surface for this than a single result screen — it
+is easy to design a trend chart that reads as a precise clinical instrument
+(a line graph with a numeric y-axis, a "your score" figure) purely by
+following ordinary dashboard conventions, without anyone intending to
+introduce ML terminology or a diagnostic framing.
+
+The design response: `stress_level` (0/1/2) is used only to choose a bar's
+height and a fixed word label ("Low"/"Moderate"/"High"), never displayed as
+a number, and `top_factor_phrase` is the same pre-approved,
+`validate_user_facing_text()`-checked phrase already used inside the
+explanation paragraph (§ Human-Centered Explanation Generator), rendered
+verbatim rather than re-derived. The one new piece of text this component
+introduces — the plain-language trend summary ("things have been trending a
+little steadier...") — is generated from a simple comparison over the last
+two or three `stress_level` values only, in `ProgressPage.tsx`'s
+`summarizeTrend()`, and never states or implies a number.
+
+Colour is deliberately not load-bearing, consistent with `index.css`'s
+existing design-token rationale ("colour is never load-bearing for the
+stress level, the wording carries it"): the trend bars use one accent hue at
+three intensities rather than a red/amber/green severity scale, and every
+bar also carries its own word label, so the visual would still be legible
+with colour removed entirely.
+
+### `top_factor_phrase`: still the top severity-axis factor, still safety-gated
+
+`GET /assessments/history` returns each check-in's single strongest
+contributing factor — the rank-1 entry of that check-in's
+`ExplanationFactor` list (§ Human-Centered Explanation Generator's severity
+axis) — but only as its already-curated `FEATURE_PHRASES` phrase, never as
+the underlying feature name or signed contribution. This mirrors how
+`AssessmentResponse` already excludes `feature` from `RecommendationItem`
+(`backend/app/schemas/assessment.py`): the response schema for a
+student-facing endpoint is held to the same vocabulary discipline as the
+explanation text itself, not merely to the discipline applied to the raw
+persisted record.
+
+### Read-only by design
+
+The endpoint runs no prediction, explanation, or recommendation logic — it
+is a query over rows `POST /assessments` already wrote. This keeps the
+dashboard's addition to the system's surface area small and auditable: it
+cannot introduce a new source of disagreement between what a student was
+told at check-in time and what the dashboard later shows them, because it
+is reading the same persisted record back rather than recomputing anything.
+
 ## NLP Feature Ablation Study (Experiments A–D) — `05_NLP_Ablation.ipynb`
 
 **Research comparison only.** This section documents an ablation study

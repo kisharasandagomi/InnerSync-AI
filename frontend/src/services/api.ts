@@ -47,6 +47,25 @@ export interface AssessmentResult {
   escalation_message: string | null;
 }
 
+/**
+ * One past check-in, as returned by `GET /assessments/history`.
+ *
+ * Same non-technical discipline as `AssessmentResult`: no SHAP value, no raw
+ * feature name, no numeric severity score. `top_factor_phrase` is the same
+ * kind of pre-approved plain-language phrase already used in the explanation
+ * paragraph, generated server-side, rendered here verbatim.
+ */
+export interface AssessmentHistoryItem {
+  assessment_id: number;
+  created_at: string;
+  stress_level: 0 | 1 | 2;
+  stress_level_label: string;
+  previous_engagement: PreviousEngagement;
+  adaptive_recovery_applied: boolean;
+  is_escalation: boolean;
+  top_factor_phrase: string | null;
+}
+
 export class ApiError extends Error {
   readonly status: number;
 
@@ -124,6 +143,15 @@ export function submitAssessment(
       // not a nested one.
       body: JSON.stringify({ ...answers, previous_engagement: previousEngagement }),
     },
+    token,
+  );
+}
+
+/** The caller's own past check-ins, oldest first. Read-only. */
+export function getAssessmentHistory(token: string) {
+  return request<AssessmentHistoryItem[]>(
+    "/assessments/history",
+    { method: "GET" },
     token,
   );
 }
