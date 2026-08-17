@@ -52,14 +52,30 @@ class RecommendationTemplate:
             Adaptive Recovery Framework's logging.
         title: Short label for the suggestion.
         action: The specific first step. Must be completable in one week.
+            Used whenever `hobby_action_template` is unset, or the student
+            has no `hobby` set on their profile — the generic phrasing this
+            template has always had.
         rationale: Why this is being suggested, in plain language, phrased so it
             connects to what the student already read in their explanation.
+        hobby_action_template: An optional alternate `action`, containing
+            exactly one `{hobby}` placeholder, used in place of `action`
+            only when the student has set a `hobby` on their profile (see
+            `backend/app/models/user_profile.py`). `None` for every template
+            that isn't personalisable this way — round 3 added this to
+            exactly one template (`mental_health_history`'s primary) rather
+            than every entry; see that template for the reasoning. The
+            interpolated string still passes through
+            `validate_user_facing_text()` like any other user-facing text,
+            with the plain `action` as the fallback if a student's own
+            `hobby` text happens to trip the gate — see
+            `engine.build_recommendation_plan`.
     """
 
     category: str
     title: str
     action: str
     rationale: str
+    hobby_action_template: str | None = None
 
 
 # feature -> [primary, alternate]. Both directions covered — see module docstring.
@@ -106,6 +122,16 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             rationale=(
                 "You have navigated periods like this before, and what worked then "
                 "is often still available to you now."
+            ),
+            # Chosen for hobby personalisation because its own generic
+            # phrasing is already about returning to a helpful routine — a
+            # hobby is a direct, concrete example of that, not a stretch.
+            # Falls back to the plain `action` above whenever no hobby is
+            # set, or the interpolated text ever fails the safety gate.
+            hobby_action_template=(
+                "Think of one thing that genuinely helped when you last felt "
+                "stretched — for you, that might be {hobby} — and take the first "
+                "step back toward it this week."
             ),
         ),
         RecommendationTemplate(

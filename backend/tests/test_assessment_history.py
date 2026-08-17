@@ -96,6 +96,7 @@ def test_history_item_shape_and_vocabulary(client: TestClient) -> None:
         "adaptive_recovery_applied",
         "is_escalation",
         "top_factor_phrase",
+        "explanation",
     ):
         assert field in item, f"missing field: {field}"
 
@@ -104,7 +105,25 @@ def test_history_item_shape_and_vocabulary(client: TestClient) -> None:
     assert item["adaptive_recovery_applied"] is False
     assert item["is_escalation"] is False
     assert item["top_factor_phrase"] is not None
+    assert len(item["explanation"]) > len(item["top_factor_phrase"])
 
     payload = response.text.lower()
     for term in ("shap", "feature", "importance", "severity", "diagnosis", "treatment"):
         assert term not in payload, f"response leaked forbidden vocabulary: {term}"
+
+
+def test_history_explanation_matches_what_was_returned_at_submission_time(
+    client: TestClient,
+) -> None:
+    """The stored, replayed explanation is byte-identical to the original response."""
+    headers = _register_and_login(client, "explanation.replay@example.ac.uk")
+
+    submit_response = client.post(
+        "/assessments", json=NOTEBOOK_CASE_HIGH_STRESS, headers=headers
+    )
+    original_explanation = submit_response.json()["explanation"]
+
+    history = client.get("/assessments/history", headers=headers).json()
+
+    assert len(history) == 1
+    assert history[0]["explanation"] == original_explanation

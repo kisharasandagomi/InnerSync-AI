@@ -30,6 +30,14 @@ class User(Base):
         nullable=False,
     )
 
+    # Optional, self-chosen — never required, never inferred. Used only to
+    # personalise the chat check-in greeting template (see
+    # app.schemas.auth.resolve_greeting_name); when unset, the greeting falls
+    # back to the local part of the email rather than showing blank or broken
+    # text. Kept on this table (not user_profiles) because it is an identity/
+    # display attribute like email, not a demographic fairness field.
+    display_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+
     profile: Mapped["UserProfile | None"] = relationship(  # noqa: F821
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )

@@ -3,14 +3,25 @@
 **Hard boundary — restated here, not just in `app/models/chat_message.py`,
 because it is the easiest rule in this file to violate by accident while
 wiring "send a message, get a reply".** This module never calls
-`StressPredictor.predict()`, never imports `app.ml.predictor`, never touches
-`app.models.assessment.Assessment`, and never changes `POST /assessments` or
-its 14-feature contract. Chat messages are persisted to `chat_messages` only.
-See `CLAUDE.md`'s Module 3 section and `docs/research/methodology.md` §
-Conversational Interaction Layer: no dataset available to this project pairs
-structured questionnaire features with free text from the same person (§ NLP
-Feature Ablation Study, Experiments C/D), so a combined model is documented
-future work, not something to improvise here as a shortcut.
+`StressPredictor.predict()`, never imports `app.ml.predictor`, and never
+writes to `app.models.assessment.Assessment` or changes `POST /assessments`
+or its 14-feature contract. Chat messages are persisted to `chat_messages`
+only. See `CLAUDE.md`'s Module 3 section and `docs/research/methodology.md`
+§ Conversational Interaction Layer: no dataset available to this project
+pairs structured questionnaire features with free text from the same person
+(§ NLP Feature Ablation Study, Experiments C/D), so a combined model is
+documented future work, not something to improvise here as a shortcut.
+
+The one **read-only** exception, added for "discuss my own past result":
+`_fetch_recent_explanation` looks up the student's own most recent
+`ExplanationRecord.paragraph` — the already-generated, already-safety-gated
+plain-language text the student already read on the results screen, nothing
+else from that table and nothing from `Assessment` beyond which row is
+newest. No SHAP value, feature name, or numeric score is ever read here; see
+that function's docstring. This is context *for a conversation*, not a
+prediction input — it flows one direction only (approved explanation text
+into a Gemini prompt), never back into anything that predicts, trains, or
+writes to the assessment tables.
 
 **Every Gemini failure mode gets exactly one of two treatments, decided
 once, never retried indefinitely:**
@@ -41,12 +52,14 @@ from app.chatbot.prompts import (
     RATE_LIMIT_FALLBACK_REPLY,
     SAFETY_FALLBACK_REPLY,
     SESSION_CAP_MESSAGE,
-    SYSTEM_PROMPT,
     UNAVAILABLE_FALLBACK_REPLY,
+    build_system_instruction,
 )
 from app.chatbot.sentiment import log_message_sentiment
 from app.core.config import get_settings
+from app.models.assessment import Assessment
 from app.models.chat_message import ChatMessage
+from app.models.explanation_record import ExplanationRecord
 from ml_pipeline.src.explainability.generator import ExplanationSafetyError, validate_user_facing_text
 
 logger = logging.getLogger(__name__)
@@ -119,6 +132,34 @@ def _count_current_session_turns(db: Session, user_id: int) -> int:
     return count
 
 
+def _fetch_recent_explanation(db: Session, user_id: int) -> str | None:
+    """Return the caller's own most recent explanation paragraph, or `None`.
+
+    Reads exactly one field — `ExplanationRecord.paragraph` — the same
+    already-generated, already-`validate_user_facing_text()`-checked string
+    `GET /assessments/history`'s `top_factor_phrase` and `ResultsPage.tsx`
+    already surface elsewhere. Never reads `faithfulness_factors` (the raw
+    SHAP attribution), never reads a feature name, and never reads anything
+    from `Assessment` beyond `created_at`, used only to find the newest row.
+
+    Args:
+        db: Database session.
+        user_id: Whose explanation to fetch — always the authenticated
+            caller's own id; this never reads another user's rows.
+
+    Returns:
+        The paragraph text, or `None` if the student has no prior check-in.
+    """
+    record = (
+        db.query(ExplanationRecord.paragraph)
+        .join(Assessment, Assessment.id == ExplanationRecord.assessment_id)
+        .filter(Assessment.user_id == user_id)
+        .order_by(Assessment.created_at.desc())
+        .first()
+    )
+    return record[0] if record else None
+
+
 def _build_gemini_contents(
     history: list[ChatMessage], new_user_text: str
 ) -> list[genai_types.Content]:
@@ -181,7 +222,8 @@ def send_message(db: Session, user_id: int, text: str) -> ChatTurnResult:
     )
     history.reverse()  # oldest first, as Gemini expects
 
-    reply_text, fallback_reason = _get_validated_reply(history, text)
+    recent_explanation = _fetch_recent_explanation(db, user_id)
+    reply_text, fallback_reason = _get_validated_reply(history, text, recent_explanation)
 
     user_message = ChatMessage(user_id=user_id, role="user", content=text)
     db.add(user_message)
@@ -204,7 +246,9 @@ def send_message(db: Session, user_id: int, text: str) -> ChatTurnResult:
 
 
 def _get_validated_reply(
-    history: list[ChatMessage], new_user_text: str
+    history: list[ChatMessage],
+    new_user_text: str,
+    recent_explanation: str | None,
 ) -> tuple[str, str | None]:
     """Call Gemini and run its output through the existing safety gate.
 
@@ -216,6 +260,12 @@ def _get_validated_reply(
     Args:
         history: Prior messages, oldest first. Not yet including the new one.
         new_user_text: The student's new message.
+        recent_explanation: The student's most recent check-in explanation
+            paragraph, or `None` — see `_fetch_recent_explanation`. Folded
+            into the system instruction so the student can ask about their
+            own result; never included as a message in `contents`, which
+            would let it be echoed back verbatim more easily than an
+            instruction can.
 
     Returns:
         `(text to show the student, fallback_reason or None if genuine)`.
@@ -224,7 +274,8 @@ def _get_validated_reply(
     settings = get_settings()
     contents = _build_gemini_contents(history, new_user_text)
     config = genai_types.GenerateContentConfig(
-        system_instruction=SYSTEM_PROMPT, max_output_tokens=MAX_OUTPUT_TOKENS
+        system_instruction=build_system_instruction(recent_explanation),
+        max_output_tokens=MAX_OUTPUT_TOKENS,
     )
 
     try:

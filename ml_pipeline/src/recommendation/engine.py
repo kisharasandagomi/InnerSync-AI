@@ -23,12 +23,19 @@ adaptive paths rather than being duplicated.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Sequence
 
-from ..explainability.generator import ExplanationFactor, validate_user_facing_text
+from ..explainability.generator import (
+    ExplanationFactor,
+    ExplanationSafetyError,
+    validate_user_facing_text,
+)
 from .catalogue import AFFIRMATION_BY_CLASS, RECOMMENDATION_CATALOGUE, RecommendationTemplate
+
+logger = logging.getLogger(__name__)
 
 # Minimum severity contribution before a factor earns a recommendation.
 #
@@ -98,12 +105,48 @@ class RecommendationPlan:
         return [f"{r.title}: {r.action}" for r in self.recommendations]
 
 
+def _resolve_action_text(template: RecommendationTemplate, hobby: str | None) -> str:
+    """The action text to use: hobby-personalised if available and safe, else generic.
+
+    Only ever returns `template.hobby_action_template.format(hobby=hobby)`
+    when that template supports it, a hobby was actually supplied, and the
+    interpolated result still passes `validate_user_facing_text()` — a
+    student's own free-text `hobby` field is not itself gated at write time
+    beyond a length bound, so this is the point where an unlucky value
+    (one that happens to contain forbidden vocabulary) is caught. On
+    failure, this falls back to the template's own generic `action` text —
+    which is static, catalogue-reviewed, and always safe — rather than
+    raising, since a personalisation nicety must never be able to break a
+    check-in result.
+
+    Args:
+        template: The selected recommendation template.
+        hobby: The student's own profile `hobby` text, or `None`.
+
+    Returns:
+        The action text to show.
+    """
+    if not (template.hobby_action_template and hobby):
+        return template.action
+    candidate = template.hobby_action_template.format(hobby=hobby)
+    try:
+        validate_user_facing_text(f"{template.title} {candidate} {template.rationale}")
+    except ExplanationSafetyError:
+        logger.warning(
+            "Hobby-personalised recommendation text failed the safety gate; "
+            "falling back to the generic action. The rejected text is not persisted."
+        )
+        return template.action
+    return candidate
+
+
 def build_recommendation_plan(
     factors: Sequence[ExplanationFactor],
     predicted_class: int,
     max_recommendations: int = MAX_RECOMMENDATIONS,
     min_severity: float = MIN_SEVERITY_FOR_ACTION,
     context: dict | None = None,
+    hobby: str | None = None,
 ) -> RecommendationPlan:
     """Turn the explanation's contributing factors into a short, ranked plan.
 
@@ -125,6 +168,12 @@ def build_recommendation_plan(
         max_recommendations: Ceiling on plan size.
         min_severity: Minimum severity contribution to warrant an action.
         context: Optional metadata for the faithfulness record; never shown.
+        hobby: The student's own profile `hobby` text, or `None`. Used only
+            by the one catalogue template that supports it
+            (`mental_health_history`'s primary — see `catalogue.py`); every
+            other selected factor's recommendation is unaffected by this
+            argument. See `_resolve_action_text` for the safe-fallback
+            behaviour if the interpolated text ever fails the gate.
 
     Returns:
         A `RecommendationPlan`, possibly with zero recommendations.
@@ -150,19 +199,23 @@ def build_recommendation_plan(
         raise ValueError(f"No recommendation defined for: {missing}")
 
     recommendations: list[Recommendation] = []
+    hobby_personalization_used = False
     for priority, factor in enumerate(selected, start=1):
         # [0] = primary template. The point-in-time engine never uses the
         # alternate at [1] — that exists only for the Adaptive Recovery
         # Framework (backend/app/services/adaptive_recovery.py).
         template: RecommendationTemplate = RECOMMENDATION_CATALOGUE[factor.feature][0]
-        validate_user_facing_text(f"{template.title} {template.action} {template.rationale}")
+        action_text = _resolve_action_text(template, hobby)
+        if action_text != template.action:
+            hobby_personalization_used = True
+        validate_user_facing_text(f"{template.title} {action_text} {template.rationale}")
         recommendations.append(
             Recommendation(
                 priority=priority,
                 feature=factor.feature,
                 category=template.category,
                 title=template.title,
-                action=template.action,
+                action=action_text,
                 rationale=template.rationale,
                 severity_contribution=float(factor.shap_value),
             )
@@ -178,6 +231,7 @@ def build_recommendation_plan(
         "component": "recommendation_engine",
         "scope": "single point-in-time assessment; no engagement history used",
         "adaptive_recovery_applied": False,
+        "hobby_personalization_used": hobby_personalization_used,
         "predicted_class": int(predicted_class),
         "selection_rules": {
             "min_severity_for_action": min_severity,

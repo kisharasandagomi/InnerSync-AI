@@ -24,6 +24,13 @@ import { useAuth } from "../services/auth";
  * comment): the bars use a single accent hue at three intensities, and every
  * bar carries its own word label, so removing colour entirely would not lose
  * information.
+ *
+ * Each entry in "Check-in by check-in" is expandable (round 2 UX feedback):
+ * `top_factor_phrase` alone was too thin a summary. Expanding reveals that
+ * check-in's full `explanation` paragraph — the exact
+ * `ExplanationRecord.paragraph` text the student already read on the
+ * results screen at the time, reused verbatim via `GET /assessments/history`.
+ * Nothing here regenerates or rewords it.
  */
 export function ProgressPage() {
   const { token } = useAuth();
@@ -53,7 +60,7 @@ export function ProgressPage() {
   return (
     <div>
       <p className="text-xs uppercase tracking-wider text-ink-faint">
-        Your progress
+        My Trends
       </p>
       <h1 className="mt-2 text-xl font-semibold tracking-tight text-ink">
         How things have been trending
@@ -108,6 +115,11 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
             At the time, {only.top_factor_phrase}.
           </p>
         )}
+        {only.explanation && (
+          <p className="mt-3 whitespace-pre-line text-sm leading-6 text-ink-soft">
+            {only.explanation}
+          </p>
+        )}
         <p className="mt-4 text-sm text-ink-faint">
           Come back after your next check-in and this page will start showing
           how things are trending over time.
@@ -157,40 +169,73 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
         </h2>
         <ol className="mt-3 space-y-3">
           {[...history].reverse().map((item) => (
-            <li
-              key={item.assessment_id}
-              className="rounded-lg border border-line bg-card p-5"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <p className="text-base font-medium text-ink">
-                  {formatDate(item.created_at)} —{" "}
-                  <span className="text-accent-strong">
-                    {item.stress_level_label}
-                  </span>
-                </p>
-                <div className="flex gap-2">
-                  {item.is_escalation && (
-                    <span className="rounded-full border border-accent bg-accent-soft/60 px-2 py-0.5 text-xs text-accent-strong">
-                      Pointed toward wellbeing services
-                    </span>
-                  )}
-                  {!item.is_escalation && item.adaptive_recovery_applied && (
-                    <span className="rounded-full border border-line bg-accent-soft/40 px-2 py-0.5 text-xs text-ink-soft">
-                      Suggestions adjusted from last time
-                    </span>
-                  )}
-                </div>
-              </div>
-              {item.top_factor_phrase && (
-                <p className="mt-2 text-sm leading-6 text-ink-soft">
-                  {capitalise(item.top_factor_phrase)}.
-                </p>
-              )}
-            </li>
+            <HistoryEntry key={item.assessment_id} item={item} />
           ))}
         </ol>
       </section>
     </>
+  );
+}
+
+/**
+ * One reverse-chronological entry, collapsed to the one-line
+ * `top_factor_phrase` by default, expandable to that check-in's full
+ * `explanation` paragraph — reused verbatim, never regenerated (see the
+ * module docstring above).
+ */
+function HistoryEntry({ item }: { item: AssessmentHistoryItem }) {
+  const [expanded, setExpanded] = useState(false);
+  const detailId = `history-detail-${item.assessment_id}`;
+
+  return (
+    <li className="rounded-lg border border-line bg-card p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="text-base font-medium text-ink">
+          {formatDate(item.created_at)} —{" "}
+          <span className="text-accent-strong">{item.stress_level_label}</span>
+        </p>
+        <div className="flex gap-2">
+          {item.is_escalation && (
+            <span className="rounded-full border border-accent bg-accent-soft/60 px-2 py-0.5 text-xs text-accent-strong">
+              Pointed toward wellbeing services
+            </span>
+          )}
+          {!item.is_escalation && item.adaptive_recovery_applied && (
+            <span className="rounded-full border border-line bg-accent-soft/40 px-2 py-0.5 text-xs text-ink-soft">
+              Suggestions adjusted from last time
+            </span>
+          )}
+        </div>
+      </div>
+
+      {item.top_factor_phrase && (
+        <p className="mt-2 text-sm leading-6 text-ink-soft">
+          {capitalise(item.top_factor_phrase)}.
+        </p>
+      )}
+
+      {item.explanation && (
+        <>
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-controls={detailId}
+            className="mt-2 text-sm font-medium text-accent-strong underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            {expanded ? "Show less" : "Show the full explanation"}
+          </button>
+          {expanded && (
+            <p
+              id={detailId}
+              className="mt-2 whitespace-pre-line rounded-md bg-accent-soft/30 p-3 text-sm leading-6 text-ink-soft"
+            >
+              {item.explanation}
+            </p>
+          )}
+        </>
+      )}
+    </li>
   );
 }
 

@@ -29,9 +29,12 @@ from app.chatbot.prompts import (
     RATE_LIMIT_FALLBACK_REPLY,
     SAFETY_FALLBACK_REPLY,
     SESSION_CAP_MESSAGE,
+    SYSTEM_PROMPT,
     UNAVAILABLE_FALLBACK_REPLY,
+    build_system_instruction,
 )
 from ml_pipeline.src.explainability.generator import validate_user_facing_text
+from tests.test_assessments import NOTEBOOK_CASE_HIGH_STRESS
 
 
 def _fake_client(reply_text: str | None = None, raise_: Exception | None = None) -> MagicMock:
@@ -270,3 +273,104 @@ def test_history_is_returned_oldest_first(
     assert [m["content"] for m in body if m["role"] == "user"] == ["first", "second"]
     timestamps = [m["created_at"] for m in body]
     assert timestamps == sorted(timestamps)
+
+
+# ---------------------------------------------------------------------------
+# "Discuss my own past result" (round 2, item 3)
+# ---------------------------------------------------------------------------
+
+
+def test_build_system_instruction_omits_context_block_when_no_explanation() -> None:
+    assert build_system_instruction(None) == SYSTEM_PROMPT
+
+
+def test_build_system_instruction_appends_the_paragraph_verbatim_when_present() -> None:
+    paragraph = "Your current wellbeing check-in suggests you are under a fair amount of pressure."
+    instruction = build_system_instruction(paragraph)
+
+    assert instruction.startswith(SYSTEM_PROMPT)
+    assert paragraph in instruction
+
+
+def test_chat_uses_the_students_own_recent_explanation_as_context(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, db_session
+) -> None:
+    """A student with a prior check-in gets that explanation folded into the system prompt."""
+    headers = _headers(client, "chat.context@example.ac.uk")
+
+    # A real check-in first, through the real (unchanged) pipeline — so this
+    # is a genuine ExplanationRecord, not a hand-built fixture.
+    assessment_response = client.post(
+        "/assessments", json=NOTEBOOK_CASE_HIGH_STRESS, headers=headers
+    )
+    assert assessment_response.status_code == 201
+    expected_paragraph = assessment_response.json()["explanation"]
+
+    fake = _fake_client(reply_text="Sure, happy to talk through that with you.")
+    monkeypatch.setattr(chat_service, "get_gemini_client", lambda: fake)
+
+    response = client.post(
+        "/chat/messages", json={"content": "Why did it say I was stressed?"}, headers=headers
+    )
+
+    assert response.status_code == 201
+    _, kwargs = fake.models.generate_content.call_args
+    system_instruction = kwargs["config"].system_instruction
+    assert expected_paragraph in system_instruction
+    # The base rules are still present alongside the added context.
+    assert "Never diagnose" in system_instruction
+
+
+def test_chat_context_never_carries_shap_or_feature_vocabulary(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The context fold-in reads only the safety-gated paragraph — nothing technical."""
+    headers = _headers(client, "chat.context.safe@example.ac.uk")
+    client.post("/assessments", json=NOTEBOOK_CASE_HIGH_STRESS, headers=headers)
+
+    fake = _fake_client(reply_text="Sure, happy to talk through that with you.")
+    monkeypatch.setattr(chat_service, "get_gemini_client", lambda: fake)
+
+    client.post("/chat/messages", json={"content": "Why did it say that?"}, headers=headers)
+
+    _, kwargs = fake.models.generate_content.call_args
+    system_instruction = kwargs["config"].system_instruction.lower()
+    for term in ("shap", "feature", "importance", "coefficient", "probability"):
+        assert term not in system_instruction
+
+
+def test_chat_without_a_prior_checkin_gets_no_context_block(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A student who has never completed a check-in gets the bare system prompt."""
+    headers = _headers(client, "chat.no.checkin@example.ac.uk")
+    fake = _fake_client(reply_text="Sure, tell me more.")
+    monkeypatch.setattr(chat_service, "get_gemini_client", lambda: fake)
+
+    client.post("/chat/messages", json={"content": "Hi"}, headers=headers)
+
+    _, kwargs = fake.models.generate_content.call_args
+    assert kwargs["config"].system_instruction == SYSTEM_PROMPT
+
+
+def test_chat_context_is_scoped_to_the_authenticated_caller(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """User B's chat context must never include user A's explanation."""
+    headers_a = _headers(client, "chat.context.a@example.ac.uk")
+    headers_b = _headers(client, "chat.context.b@example.ac.uk")
+
+    assessment_response = client.post(
+        "/assessments", json=NOTEBOOK_CASE_HIGH_STRESS, headers=headers_a
+    )
+    a_paragraph = assessment_response.json()["explanation"]
+
+    fake = _fake_client(reply_text="Sure, tell me more.")
+    monkeypatch.setattr(chat_service, "get_gemini_client", lambda: fake)
+
+    client.post("/chat/messages", json={"content": "Hi"}, headers=headers_b)
+
+    _, kwargs = fake.models.generate_content.call_args
+    system_instruction = kwargs["config"].system_instruction
+    assert a_paragraph not in system_instruction
+    assert system_instruction == SYSTEM_PROMPT

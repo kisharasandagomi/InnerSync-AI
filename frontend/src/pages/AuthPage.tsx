@@ -10,6 +10,8 @@ export function AuthPage() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [hobby, setHobby] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -22,10 +24,10 @@ export function AuthPage() {
     setBusy(true);
     try {
       if (mode === "register") {
-        await register(email, password);
+        await register(email, password, displayName, hobby);
       }
-      const { access_token } = await login(email, password);
-      signIn(access_token, email);
+      const { access_token, display_name } = await login(email, password);
+      signIn(access_token, email, display_name);
       navigate("/");
     } catch (err) {
       setError(
@@ -86,6 +88,48 @@ export function AuthPage() {
             <p className="mt-1 text-sm text-ink-faint">At least 8 characters.</p>
           )}
         </div>
+
+        {mode === "register" && (
+          <>
+            <div>
+              <label htmlFor="display-name" className="block text-base font-medium text-ink">
+                What should we call you?{" "}
+                <span className="font-normal text-ink-faint">(optional)</span>
+              </label>
+              <input
+                id="display-name"
+                name="display_name"
+                type="text"
+                maxLength={80}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                placeholder="Leave blank and we'll use your email"
+              />
+              <p className="mt-1 text-sm text-ink-faint">Used only to greet you by name.</p>
+            </div>
+
+            <div>
+              <label htmlFor="hobby" className="block text-base font-medium text-ink">
+                Something you enjoy doing?{" "}
+                <span className="font-normal text-ink-faint">(optional)</span>
+              </label>
+              <input
+                id="hobby"
+                name="hobby"
+                type="text"
+                maxLength={80}
+                value={hobby}
+                onChange={(e) => setHobby(e.target.value)}
+                className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                placeholder="e.g. painting, football, reading"
+              />
+              <p className="mt-1 text-sm text-ink-faint">
+                Occasionally referenced in a suggestion, if it's genuinely relevant.
+              </p>
+            </div>
+          </>
+        )}
 
         {error && (
           <p role="alert" className="text-base text-danger">

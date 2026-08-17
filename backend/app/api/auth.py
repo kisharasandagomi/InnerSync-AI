@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.security import create_access_token, hash_password, verify_password
 from app.database.session import get_db
 from app.models.user import User
+from app.models.user_profile import UserProfile
 from app.schemas.auth import (
     TokenResponse,
     UserLoginRequest,
@@ -38,8 +39,19 @@ def register(payload: UserRegisterRequest, db: Session = Depends(get_db)) -> Use
             status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
         )
 
-    user = User(email=payload.email, hashed_password=hash_password(payload.password))
+    display_name = payload.display_name.strip() if payload.display_name else None
+    user = User(
+        email=payload.email,
+        hashed_password=hash_password(payload.password),
+        display_name=display_name or None,
+    )
     db.add(user)
+    db.flush()  # assign user.id without committing
+
+    hobby = payload.hobby.strip() if payload.hobby else None
+    if hobby:
+        db.add(UserProfile(user_id=user.id, hobby=hobby))
+
     db.commit()
     db.refresh(user)
     return user
@@ -67,4 +79,7 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)) -> TokenResp
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
-    return TokenResponse(access_token=create_access_token(subject=str(user.id)))
+    return TokenResponse(
+        access_token=create_access_token(subject=str(user.id)),
+        display_name=user.display_name,
+    )

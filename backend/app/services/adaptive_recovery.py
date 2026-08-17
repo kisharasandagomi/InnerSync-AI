@@ -256,8 +256,7 @@ def _apply_factor_switch(
 
 
 def plan_with_adaptive_recovery(
-    db: Session,
-    user_id: int,
+    history: Sequence[CheckInSummary],
     current_predicted_class: int,
     base_plan: RecommendationPlan,
     previous_engagement: str,
@@ -265,9 +264,13 @@ def plan_with_adaptive_recovery(
     """Apply the Adaptive Recovery Framework on top of a point-in-time plan.
 
     Args:
-        db: Open database session.
-        user_id: The authenticated caller — history is scoped to their own
-            rows only.
+        history: The caller's own prior check-ins, most-recent-first — from
+            `fetch_recent_history`. Takes the already-fetched list rather
+            than a `db`/`user_id` pair and fetching internally: round 3
+            added a second consumer of this exact same history
+            (`app.services.comparative_trend.determine_comparative_trend`),
+            and `assessment_service.py` fetches it once and passes it to
+            both, rather than querying the database twice for the same rows.
         current_predicted_class: This check-in's predicted class.
         base_plan: The unmodified point-in-time plan for this check-in
             (`ml_pipeline.src.recommendation.build_recommendation_plan`'s
@@ -279,7 +282,6 @@ def plan_with_adaptive_recovery(
         The final result to persist — identical to the point-in-time plan
         unless a pattern was actually detected.
     """
-    history = fetch_recent_history(db, user_id)
     current_top_driver = base_plan.recommendations[0].feature if base_plan.has_actions else None
 
     decision = decide_adaptive_strategy(

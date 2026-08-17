@@ -102,16 +102,32 @@ class AssessmentResponse(BaseModel):
     )
     escalation_message: str | None = None
 
+    comparative_trend_message: str | None = Field(
+        default=None,
+        description=(
+            "A short message comparing this result to the student's immediately "
+            "previous check-in, or null for a genuine first-ever check-in. When "
+            "this check-in also triggers is_escalation, this is a brief, "
+            "coordinated note rather than a second emotionally-loaded message — "
+            "see docs/research/methodology.md § Comparative Trend Message."
+        ),
+    )
+
 
 class AssessmentHistoryItem(BaseModel):
     """One past check-in, for the Progress Monitoring Dashboard's trend view.
 
     Deliberately carries no SHAP value, raw feature name, or numeric severity
-    score — `top_factor_phrase` is the same safety-gate-validated
-    plain-language phrase already used inside `AssessmentResponse.explanation`
-    (see `ml_pipeline/src/explainability/templates.py`'s `FEATURE_PHRASES`),
-    for that check-in's single strongest severity-axis factor. The frontend
-    renders it as supporting text next to a level, never as a chart axis
+    score. `top_factor_phrase` and `explanation` are both text the student
+    already read at the time of that check-in, reused verbatim, not
+    regenerated: `top_factor_phrase` is the same safety-gate-validated
+    plain-language phrase used inside `AssessmentResponse.explanation` (see
+    `ml_pipeline/src/explainability/templates.py`'s `FEATURE_PHRASES`) for
+    that check-in's single strongest severity-axis factor, and `explanation`
+    is that same check-in's full `ExplanationRecord.paragraph` — identical to
+    what `AssessmentResponse.explanation` returned at submission time. The
+    frontend shows `top_factor_phrase` as the one-line summary per entry and
+    `explanation` behind an explicit expand action, never as a chart axis
     value.
     """
 
@@ -135,4 +151,7 @@ class AssessmentHistoryItem(BaseModel):
             "Plain-language phrase for the strongest contributing factor at "
             "this check-in, or null if none was recorded"
         ),
+    )
+    explanation: str = Field(
+        description="This check-in's full plain-language explanation paragraph, verbatim"
     )

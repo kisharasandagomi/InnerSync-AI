@@ -82,6 +82,7 @@ def submit_assessment(
         affirmation=recommendation.affirmation_text,
         is_escalation=recommendation.is_escalation,
         escalation_message=recommendation.escalation_message,
+        comparative_trend_message=recommendation.comparative_trend_message,
     )
 
 
@@ -134,6 +135,7 @@ def get_assessment_history(
                 adaptive_recovery_applied=recommendation.adaptive_recovery_applied,
                 is_escalation=recommendation.is_escalation,
                 top_factor_phrase=top_factor_phrase,
+                explanation=explanation.paragraph,
             )
         )
     return history

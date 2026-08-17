@@ -45,6 +45,15 @@ export interface AssessmentResult {
    */
   is_escalation: boolean;
   escalation_message: string | null;
+  /**
+   * A short message comparing this result to the student's immediately
+   * previous check-in, or `null` for a genuine first-ever check-in or when
+   * the comparison is otherwise unavailable. Already safety-gated and
+   * escalation-coordinated server-side (see
+   * `docs/research/methodology.md` § Comparative Trend Message) — rendered
+   * verbatim, never re-derived here.
+   */
+  comparative_trend_message: string | null;
 }
 
 /**
@@ -64,6 +73,8 @@ export interface AssessmentHistoryItem {
   adaptive_recovery_applied: boolean;
   is_escalation: boolean;
   top_factor_phrase: string | null;
+  /** That check-in's full explanation paragraph, verbatim — see ProgressPage's expandable entries. */
+  explanation: string;
 }
 
 export class ApiError extends Error {
@@ -115,18 +126,38 @@ async function request<T>(
   return (await response.json()) as T;
 }
 
-export function register(email: string, password: string) {
-  return request<{ id: number; email: string; created_at: string }>(
+/**
+ * `displayName` and `hobby` are both optional, collected once at
+ * registration — see `docs/research/methodology.md` § Personalized Greeting
+ * and § Hobby-Personalized Recommendations. Neither adds a required step;
+ * omitting either leaves the graceful fallbacks this project already uses
+ * elsewhere.
+ */
+export function register(
+  email: string,
+  password: string,
+  displayName?: string,
+  hobby?: string,
+) {
+  return request<{ id: number; email: string; created_at: string; display_name: string | null }>(
     "/auth/register",
-    { method: "POST", body: JSON.stringify({ email, password }) },
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        password,
+        display_name: displayName || undefined,
+        hobby: hobby || undefined,
+      }),
+    },
   );
 }
 
 export function login(email: string, password: string) {
-  return request<{ access_token: string; token_type: string }>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+  return request<{ access_token: string; token_type: string; display_name: string | null }>(
+    "/auth/login",
+    { method: "POST", body: JSON.stringify({ email, password }) },
+  );
 }
 
 export function submitAssessment(

@@ -99,6 +99,17 @@ export function ResultsPage() {
         </section>
       )}
 
+      {/* Placed last, deliberately quiet — see ChatPage.tsx's resultMessages
+          for the same positioning reasoning: this never competes with the
+          escalation signpost/affirmation/recommendations above it, and the
+          backend has already coordinated its content so it never stacks a
+          second heavy message alongside an active escalation. */}
+      {result.comparative_trend_message && (
+        <p className="mt-6 text-sm leading-6 text-ink-soft">
+          {result.comparative_trend_message}
+        </p>
+      )}
+
       <div className="mt-8 flex flex-wrap items-center gap-4">
         <Link
           to="/assessment"
@@ -110,7 +121,7 @@ export function ResultsPage() {
           to="/progress"
           className="text-sm text-ink-soft underline-offset-4 hover:text-accent-strong hover:underline"
         >
-          See your trends
+          See My Trends
         </Link>
         <p className="text-xs text-ink-faint">
           Saved {new Date(result.created_at).toLocaleString()}

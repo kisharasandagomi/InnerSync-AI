@@ -35,4 +35,15 @@ class UserProfile(Base):
     degree_field: Mapped[str | None] = mapped_column(String(128), nullable=True)
     year_of_study: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
+    # A different purpose from the demographic fields above: this one *is*
+    # used at recommendation time — see
+    # ml_pipeline/src/recommendation/catalogue.py's `hobby_action_template`
+    # on the mental_health_history primary template. Self-set, once, here —
+    # deliberately never extracted from free-text chat, for the same
+    # reliability reasoning that governs the check-in's own 14 answers (see
+    # docs/research/methodology.md § Chat-Driven Check-In Delivery): a
+    # profile field the student explicitly set is a verifiable input in a
+    # way that LLM-inferred-from-conversation text is not.
+    hobby: Mapped[str | None] = mapped_column(String(80), nullable=True)
+
     user: Mapped["User"] = relationship(back_populates="profile")  # noqa: F821

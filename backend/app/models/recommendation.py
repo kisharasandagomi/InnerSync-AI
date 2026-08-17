@@ -95,6 +95,19 @@ class Recommendation(Base):
     # student to be traceable after the fact.
     adaptive_recovery_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Round 3: comparative trend message (see
+    # app/services/comparative_trend.py). `comparative_trend_outcome` is the
+    # true ordinal comparison against the immediately previous check-in —
+    # "improved" | "same" | "worse" — always logged for audit even when
+    # escalation coordination changes which *message* is actually shown.
+    # Both are None only for a genuine first-ever check-in, which has no
+    # previous result to compare against.
+    comparative_trend_outcome: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # The exact template text shown to the student, verbatim — never shown
+    # twice with different wording for the same outcome, since it is always
+    # one of the fixed templates in comparative_trend.py.
+    comparative_trend_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     assessment: Mapped["Assessment"] = relationship(  # noqa: F821
         back_populates="recommendation"
     )

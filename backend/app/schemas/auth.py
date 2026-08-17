@@ -36,10 +36,20 @@ def is_valid_email(value: str) -> bool:
 
 
 class UserRegisterRequest(BaseModel):
-    """Registration payload."""
+    """Registration payload.
+
+    `display_name` and `hobby` are both optional and collected here — one
+    extra step's worth of friction, once, rather than a separate profile
+    flow — per round 3's personalization features. Neither is required;
+    skipping both leaves the same graceful fallbacks this project already
+    uses elsewhere (see `resolve_greeting_name` below and
+    `ml_pipeline/src/recommendation/catalogue.py`'s hobby-aware template).
+    """
 
     email: EmailAddress
     password: str = Field(min_length=8, max_length=72)  # bcrypt input limit
+    display_name: str | None = Field(default=None, max_length=80)
+    hobby: str | None = Field(default=None, max_length=80)
 
 
 class UserLoginRequest(BaseModel):
@@ -57,10 +67,44 @@ class UserResponse(BaseModel):
     id: int
     email: str
     created_at: datetime
+    display_name: str | None = None
 
 
 class TokenResponse(BaseModel):
-    """Issued access token."""
+    """Issued access token.
+
+    `display_name` rides along here (rather than requiring a separate
+    "who am I" call) so the frontend can render the check-in greeting
+    template immediately after sign-in without an extra round trip. `None`
+    when the student never set one — the frontend falls back to the email's
+    local part, via the same reasoning as `resolve_greeting_name` below.
+    """
 
     access_token: str
     token_type: str = "bearer"
+    display_name: str | None = None
+
+
+def resolve_greeting_name(display_name: str | None, email: str) -> str:
+    """The name to greet a student by: their own choice, or a graceful fallback.
+
+    A template, not an LLM generation — see `frontend/src/pages/ChatPage.tsx`'s
+    `questionPrompt`, which uses the frontend equivalent of this same
+    fallback (`resolveGreetingName` in `services/greeting.ts`) to build the
+    literal "Hi {name}, ready for your check-in?" string. Kept here too, and
+    exercised by a backend test, so the *reasoning* — never a blank or
+    broken greeting — is verified on both sides rather than trusted to only
+    one.
+
+    Args:
+        display_name: The student's own chosen name, or `None`/blank if
+            never set.
+        email: Always present — the fallback source.
+
+    Returns:
+        `display_name` if it is set and non-blank; otherwise the part of
+        `email` before the `@`.
+    """
+    if display_name and display_name.strip():
+        return display_name.strip()
+    return email.split("@", 1)[0]

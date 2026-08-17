@@ -947,17 +947,35 @@ the recommendation engine, and the safety gate are all unchanged.
 ### The LLM has no role in capturing answers
 
 Each question is answered through a bounded quick-select control rendered
-inside the chat bubble — chips for a small integer range, a slider with an
-explicit confirm step for the one wide-range field (`self_esteem`,
-0-30) — never free text interpreted by Gemini into a value. This is the
-same "no LLM in the prediction path" discipline documented for the chatbot
-itself (§ Conversational Interaction Layer, above) and the same reasoning
-behind the NLP ablation study's conclusion (§ NLP Feature Ablation Study,
-Experiments C/D): this project has spent real effort establishing that a
-value feeding the trained model must be precise and verifiable, not
-inferred from language. Letting an LLM interpret "yeah pretty rough
-tbh" into a `study_load` value would reintroduce exactly that risk for a
-14-feature contract that has otherwise never taken free text as input.
+inside the chat bubble — never free text interpreted by Gemini into a
+value. This is the same "no LLM in the prediction path" discipline
+documented for the chatbot itself (§ Conversational Interaction Layer,
+above) and the same reasoning behind the NLP ablation study's conclusion (§
+NLP Feature Ablation Study, Experiments C/D): this project has spent real
+effort establishing that a value feeding the trained model must be precise
+and verifiable, not inferred from language. Letting an LLM interpret "yeah
+pretty rough tbh" into a `study_load` value would reintroduce exactly that
+risk for a 14-feature contract that has otherwise never taken free text as
+input.
+
+**Round 2 (direct user testing feedback): three widget styles, not one.**
+`frontend/src/services/checkinPresentation.ts` assigns each of the 14
+fields a widget style — slider, chip row, or an icon/emoji scale — purely a
+rendering choice, kept entirely separate from `checkinFlow.ts`. Every style
+still ends by calling the same `onAnswerFeature(value: number)`, validated
+identically against that field's own `[min, max]` regardless of which
+widget produced it; `checkinPresentation.test.ts` asserts this holds for
+every field's min, midpoint, and max value under its assigned style. The
+assignment is grouped by what each question is actually asking (documented
+in full in that module): magnitude/quantity questions get a slider,
+subjective/emotional-register questions ("how safe do you feel", "how
+supportive are your teaching staff") get a face/mood icon scale — with the
+icon sequence's direction matched to that field's own `lowLabel`/
+`highLabel` rather than assumed, since some fields improve toward their low
+end (`headache`) and others toward their high end (`safety`) — and
+concrete/countable/binary questions keep the chip row. No points, streaks,
+or scores are introduced anywhere in this — the goal was interaction
+variety, not gamifying a wellbeing check-in.
 
 The state machine driving the flow — `frontend/src/services/checkinFlow.ts`
 — is deliberately pure and has no dependency on React, Gemini, or the chat
@@ -973,10 +991,51 @@ has always produced, the same "guard the contract" pattern already used for
 
 `ChatPage.tsx` presents "Start a check-in" and "Just talk" as two distinct
 entry points (a menu screen when no mode is pre-selected via navigation
-state), never blended into one conversation. Free-form chat continues to
-never feed into the model, per the boundary in § Conversational Interaction
-Layer above — this UX change does not touch that boundary in either
-direction.
+state), never blended into one conversation while a check-in is in
+progress. Free-form chat continues to never feed into the model, per the
+boundary in § Conversational Interaction Layer above — this UX change does
+not touch that boundary in either direction.
+
+**Round 2: automatic hand-off to free-form chat after results.** Direct
+user testing found the check-in felt like it dead-ended once results
+appeared. `ChatPage.tsx` now unifies both modes onto one local message
+list, so `mode` controls only which *input* is active (the bounded
+quick-select control mid-check-in; free text once it's done), not which
+messages are visible — completing a check-in transitions `mode` to `"talk"`
+automatically, in the same thread, with no restart and no navigation. The
+transition is one-directional and inert with respect to the boundary above:
+it changes what UI element accepts the next keystroke, not what any message
+is used for. A message sent after this point is still a normal
+`POST /chat/messages` call, still never touches `Assessment` or the model.
+
+### Discussing a student's own past result in free-form chat
+
+**Round 2, another piece of direct user feedback**: a student asking "why
+did it say I was stressed?" in free-form chat previously got a reply
+admitting the bot had no access to their results at all — accurate under
+the original design, but an obviously worse experience than the system
+being capable of supporting. `app/chatbot/service.py`'s
+`_fetch_recent_explanation` now reads exactly one field — the caller's own
+most recent `ExplanationRecord.paragraph` — and `prompts.py`'s
+`build_system_instruction` folds it into the Gemini system instruction as
+context, only when present.
+
+This is a **read-only, one-directional** addition, not a weakening of the
+Module 3 boundary: the explanation text already passed
+`validate_user_facing_text()` once, when it was generated for the results
+screen, and flows only *into* a prompt, never back into anything that
+predicts, trains, or writes to the assessment tables. No SHAP value,
+feature name, or numeric score is read, because none is available to
+read — the query selects `ExplanationRecord.paragraph` alone. The **same**
+safety gate still checks the model's actual reply before it reaches the
+student, exactly as for every other chat turn; nothing about this addition
+touches that check. The system prompt is also updated to say plainly that
+it must state only what the provided summary says and never volunteer a
+"score"/"level"/"prediction" framing while discussing it — see
+`SYSTEM_PROMPT` in `prompts.py`. Tests scope this per-user
+(`test_chat_context_is_scoped_to_the_authenticated_caller`) and confirm no
+technical vocabulary reaches the prompt
+(`test_chat_context_never_carries_shap_or_feature_vocabulary`).
 
 ### Result delivery
 
@@ -995,6 +1054,87 @@ form?") from the new landing page (`LandingPage.tsx`, the default authed
 route at `/`) rather than as the promoted path, since chat is now the
 primary way to start a check-in.
 
+## Personalized Greeting
+
+Round 3. `display_name` (optional, collected once at registration —
+`backend/app/models/user.py`, on `users` rather than `user_profiles` since
+it's a display/identity attribute like email, not a demographic fairness
+field) personalises the chat check-in's opening line. Resolution — the
+student's own name if set, else the local part of their email, never blank
+or broken — is implemented twice, deliberately: `resolve_greeting_name` in
+`backend/app/schemas/auth.py` and `resolveGreetingName` in
+`frontend/src/services/greeting.ts`, both covered by tests, so the
+"never blank" guarantee is verified on both sides of the boundary rather
+than trusted to whichever one actually renders the text. The greeting
+itself — `"Hi {name}, ready for your check-in?"` — is a fixed template
+(`checkinGreeting` in `greeting.ts`), not an LLM generation, consistent with
+every other piece of deterministic, safety-relevant text in this system.
+
+## Comparative Trend Message
+
+Round 3. After a check-in with at least one prior result, a short message
+compares this result's severity to the immediately previous check-in —
+`backend/app/services/comparative_trend.py`. Three outcomes
+("improved"/"same"/"worse"), each a fixed template run through the existing
+`validate_user_facing_text()` gate, same as every other generated string in
+this system. Hedged language throughout: "a bit lighter", not "improved by
+X%"; "be gentle with yourself", not a diagnosis or a verdict.
+
+**Reuses the Adaptive Recovery Framework's own history data, not a second
+query.** `assessment_service.create_assessment` calls
+`adaptive_recovery.fetch_recent_history` once and passes the same list to
+both `plan_with_adaptive_recovery` (refactored this round to accept that
+history as a parameter, rather than fetching it internally) and
+`determine_comparative_trend`.
+
+**Escalation coordination.** Escalation (3+ consecutive check-ins at the
+highest severity class) can only fire when the immediately previous
+check-in was *also* at that class, so the raw ordinal comparison is always
+"same" whenever escalation fires — a structural fact, not a coincidence
+relied upon implicitly. `determine_comparative_trend` takes `is_escalation`
+as an explicit input regardless: when true, it always returns
+`COMPARATIVE_ESCALATION_COORDINATED_MESSAGE` — a short, factual, secondary
+note — rather than the standard "same" message, so nothing here ever reads
+as competing with or duplicating the escalation signpost's own supportive
+framing. The true ordinal outcome is still computed and persisted
+(`Recommendation.comparative_trend_outcome`) for audit even when the
+*message* shown differs from what that raw outcome would otherwise imply.
+Both frontend rendering paths (`ChatPage.tsx`'s `resultMessages`,
+`ResultsPage.tsx`) place this message last, after any escalation
+signpost/affirmation/recommendations — visually secondary, matching its
+backend-coordinated content.
+
+## Hobby-Personalized Recommendations
+
+Round 3. An optional `hobby` field (`user_profiles.hobby`, collected once at
+registration alongside `display_name`) lets exactly one existing
+recommendation template — `mental_health_history`'s primary, "Return to
+something that helped before" — reference it:
+`ml_pipeline/src/recommendation/catalogue.py`'s `RecommendationTemplate`
+gained an optional `hobby_action_template` field (a string with one
+`{hobby}` placeholder), populated only for that one template. Chosen
+because its existing generic phrasing is already about returning to a
+helpful routine, which a hobby is a direct, concrete example of — not
+retrofitted onto a thematically unrelated template.
+
+**Stays inside the existing rule-based, SHAP-traceable architecture.** The
+chatbot has no role in generating or selecting this text; `hobby` is a
+profile field the student explicitly set, read once by
+`assessment_service._fetch_hobby` and passed into
+`build_recommendation_plan`, which still only ever selects from
+`RECOMMENDATION_CATALOGUE` entries tied to an actual contributing factor —
+exactly as before. Extending this to any other template is possible but
+was deliberately not done broadly this round; one clearly-fitting template
+is worth more than several loosely-fitting ones.
+
+**Safety.** A student's own `hobby` text is free-form (bounded to 80
+characters at the schema layer, but not itself vocabulary-gated at write
+time) — so `engine._resolve_action_text` runs the interpolated text through
+`validate_user_facing_text()` before using it, and falls back silently to
+the template's own static, catalogue-reviewed `action` text if that check
+ever fails, rather than raising. A personalisation nicety must never be
+able to break a check-in result.
+
 ## Progress Monitoring Dashboard (Module 9/10)
 
 A read-only trend view over a student's own check-in history, backed by
@@ -1004,6 +1144,16 @@ prior component — `Assessment.predicted_class`, `Assessment.previous_engagemen
 `Recommendation.adaptive_recovery_applied`/`is_escalation`, and the rank-1
 entry of `ExplanationRecord.faithfulness_factors` — so this component adds no
 new write path and no new database table.
+
+**Round 2 (direct user testing feedback): expandable per-entry detail.**
+`top_factor_phrase` alone read as too thin a summary per check-in. Each
+history item now also carries `explanation` — that check-in's full
+`ExplanationRecord.paragraph`, the exact text the student already read on
+the results screen at the time, added to `AssessmentHistoryItem` as one
+more already-safety-gated field read off the same already-joined row (no
+new query). `ProgressPage.tsx`'s `HistoryEntry` shows `top_factor_phrase` by
+default and reveals `explanation` behind an explicit "Show the full
+explanation" toggle — reused verbatim, never regenerated or reworded.
 
 ### Why trend framing, not raw numbers
 

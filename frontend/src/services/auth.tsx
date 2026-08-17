@@ -35,8 +35,10 @@ import {
 interface AuthState {
   token: string | null;
   email: string | null;
+  /** The student's own chosen name, or `null` if never set — see `services/greeting.ts`. */
+  displayName: string | null;
   isAuthenticated: boolean;
-  signIn: (token: string, email: string) => void;
+  signIn: (token: string, email: string, displayName: string | null) => void;
   signOut: () => void;
 }
 
@@ -45,20 +47,26 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
-  const signIn = useCallback((nextToken: string, nextEmail: string) => {
-    setToken(nextToken);
-    setEmail(nextEmail);
-  }, []);
+  const signIn = useCallback(
+    (nextToken: string, nextEmail: string, nextDisplayName: string | null) => {
+      setToken(nextToken);
+      setEmail(nextEmail);
+      setDisplayName(nextDisplayName);
+    },
+    [],
+  );
 
   const signOut = useCallback(() => {
     setToken(null);
     setEmail(null);
+    setDisplayName(null);
   }, []);
 
   const value = useMemo<AuthState>(
-    () => ({ token, email, isAuthenticated: token !== null, signIn, signOut }),
-    [token, email, signIn, signOut],
+    () => ({ token, email, displayName, isAuthenticated: token !== null, signIn, signOut }),
+    [token, email, displayName, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

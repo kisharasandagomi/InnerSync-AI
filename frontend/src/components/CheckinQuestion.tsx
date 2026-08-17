@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PreviousEngagement } from "../services/api";
+import { iconSetFor, widgetStyleFor } from "../services/checkinPresentation";
 import type { CheckinQuestion as CheckinQuestionType } from "../services/checkinFlow";
 import type { FeatureField } from "../services/featureSchema";
 
@@ -41,8 +42,10 @@ export function CheckinQuestionControl({ question, onAnswerFeature, onAnswerEnga
 
   const { field } = question;
   const isBinary = field.min === 0 && field.max === 1;
-  const isSmallRange = field.max - field.min <= 6;
 
+  // Binary fields always render as their own two-way toggle, regardless of
+  // the assigned widget style — a slider or icon-scale for a yes/no answer
+  // would be a worse interaction, not a more varied one.
   if (isBinary) {
     return (
       <div className="mt-3 flex gap-2" role="group" aria-label={field.label}>
@@ -52,27 +55,35 @@ export function CheckinQuestionControl({ question, onAnswerFeature, onAnswerEnga
     );
   }
 
-  if (isSmallRange) {
-    const values = Array.from(
-      { length: field.max - field.min + 1 },
-      (_, i) => field.min + i,
-    );
-    return (
-      <div className="mt-3">
-        <div className="flex flex-wrap gap-2" role="group" aria-label={field.label}>
-          {values.map((v) => (
-            <Chip key={v} label={String(v)} onClick={() => onAnswerFeature(v)} />
-          ))}
-        </div>
-        <div className="mt-1.5 flex justify-between text-sm text-ink-faint">
-          <span>{field.lowLabel}</span>
-          <span>{field.highLabel}</span>
-        </div>
-      </div>
-    );
+  const style = widgetStyleFor(field.name);
+
+  if (style === "icon-scale") {
+    const icons = iconSetFor(field.name);
+    // Falls back to chips if a field is ever marked icon-scale without a
+    // matching icon set — never silently renders nothing.
+    if (icons && icons.length === field.max - field.min + 1) {
+      return <IconScaleAnswer field={field} icons={icons} onAnswer={onAnswerFeature} />;
+    }
   }
 
-  return <SliderAnswer field={field} onAnswer={onAnswerFeature} />;
+  if (style === "slider") {
+    return <SliderAnswer field={field} onAnswer={onAnswerFeature} />;
+  }
+
+  const values = Array.from({ length: field.max - field.min + 1 }, (_, i) => field.min + i);
+  return (
+    <div className="mt-3">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={field.label}>
+        {values.map((v) => (
+          <Chip key={v} label={String(v)} onClick={() => onAnswerFeature(v)} />
+        ))}
+      </div>
+      <div className="mt-1.5 flex justify-between text-sm text-ink-faint">
+        <span>{field.lowLabel}</span>
+        <span>{field.highLabel}</span>
+      </div>
+    </div>
+  );
 }
 
 function Chip({ label, onClick }: { label: string; onClick: () => void }) {
@@ -84,6 +95,48 @@ function Chip({ label, onClick }: { label: string; onClick: () => void }) {
     >
       {label}
     </button>
+  );
+}
+
+/**
+ * A face/mood icon per value, for subjective/emotional-register questions
+ * (see `checkinPresentation.ts` for the assignment reasoning). Each icon is
+ * its own tap target — no drag, no confirm step, same "one tap, one answer"
+ * directness as the chip style, just a different visual language for
+ * questions about how something *feels* rather than how much of it there is.
+ */
+function IconScaleAnswer({
+  field,
+  icons,
+  onAnswer,
+}: {
+  field: FeatureField;
+  icons: readonly string[];
+  onAnswer: (value: number) => void;
+}) {
+  return (
+    <div className="mt-3">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={field.label}>
+        {icons.map((icon, i) => {
+          const value = field.min + i;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onAnswer(value)}
+              aria-label={`${value}`}
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-line bg-card text-2xl transition-colors hover:border-accent hover:bg-accent-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <span aria-hidden="true">{icon}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-1.5 flex justify-between text-sm text-ink-faint">
+        <span>{field.lowLabel}</span>
+        <span>{field.highLabel}</span>
+      </div>
+    </div>
   );
 }
 

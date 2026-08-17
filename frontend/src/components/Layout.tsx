@@ -1,10 +1,20 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../services/auth";
 
-/** Page shell: masthead, centred column, and the standing non-clinical notice. */
+/**
+ * Page shell: masthead, centred column, and the standing non-clinical notice.
+ *
+ * The chat page gets a wider content column than the rest of the app
+ * (`max-w-5xl` vs. `max-w-3xl`) — round 2 UX feedback was that the chat felt
+ * cramped, closer to a modern chat UI's proportions than a form-width
+ * column. Still centred with visible margins either side, not full-bleed;
+ * header and footer stay at the normal site width so nav doesn't stretch
+ * awkwardly wide.
+ */
 export function Layout({ children }: { children: ReactNode }) {
   const { isAuthenticated, email, signOut } = useAuth();
+  const isChatRoute = useLocation().pathname.startsWith("/chat");
 
   return (
     <div className="min-h-full flex flex-col">
@@ -28,7 +38,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 to="/progress"
                 className="hidden rounded-md px-2 py-1.5 text-ink-soft transition-colors hover:bg-accent-soft hover:text-accent-strong sm:inline"
               >
-                Your trends
+                My Trends
               </Link>
               <span className="hidden sm:inline">{email}</span>
               <button
@@ -43,7 +53,13 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">{children}</main>
+      <main
+        className={`mx-auto w-full flex-1 px-6 py-10 ${
+          isChatRoute ? "max-w-5xl" : "max-w-3xl"
+        }`}
+      >
+        {children}
+      </main>
 
       <footer className="border-t border-line px-6 py-5">
         <p className="mx-auto max-w-3xl text-sm leading-relaxed text-ink-faint">

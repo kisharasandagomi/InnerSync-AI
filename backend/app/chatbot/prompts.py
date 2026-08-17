@@ -49,10 +49,46 @@ service or a crisis line right away, and do not attempt to handle it yourself.
 7. If a student's message seems unrelated to wellbeing, respond naturally and briefly \
 rather than forcing the topic back — this is a conversation, not an interrogation.
 
-You do not have access to any of the student's past questionnaire answers, predictions, \
-or explanations from elsewhere in this app. Do not refer to a "score", "level", \
-"prediction", or "model" — if the student mentions a check-in they did elsewhere in the \
-app, respond to what they tell you about it in conversation, not as data you can see."""
+If a "Most recent check-in" summary is provided to you below, you may draw on it \
+naturally if the student asks something like "why did it say I was stressed?" or "what \
+did my last check-in say?" — but only state what that summary actually says, never add \
+detail beyond it, and never mention it unless it's relevant to what the student is \
+asking. Do not refer to a "score", "level", "prediction", or "model" even when \
+discussing it — talk about what the summary says in the same plain language it already \
+uses. If no such summary is provided below, you do not have access to any past \
+questionnaire answers or results, so say so plainly rather than guessing."""
+
+
+# Appended to SYSTEM_PROMPT, once per request, only when the student has a
+# prior check-in — see build_system_instruction(). Kept as a template
+# separate from SYSTEM_PROMPT itself so the base prompt (validated by
+# inspection, never changes per-request) stays distinct from what is
+# genuinely per-student, per-request content.
+_RECENT_CHECKIN_CONTEXT_TEMPLATE = """
+
+Most recent check-in summary (already reviewed for safe, plain language — this is the \
+exact text the student themselves already read, not raw data):
+"{paragraph}\""""
+
+
+def build_system_instruction(recent_explanation: str | None) -> str:
+    """Compose the per-request system instruction sent to Gemini.
+
+    Args:
+        recent_explanation: The student's most recent `ExplanationRecord.paragraph`
+            (already safety-gated, already shown to the student elsewhere in
+            the app), or `None` if they have no prior check-in. Never a raw
+            SHAP value, feature name, or numeric score — see
+            `app/chatbot/service.py`'s `_fetch_recent_explanation`, which is
+            the only place this string is read from the database and passes
+            through nothing but that one already-approved field.
+
+    Returns:
+        `SYSTEM_PROMPT`, with the check-in context appended if present.
+    """
+    if not recent_explanation:
+        return SYSTEM_PROMPT
+    return SYSTEM_PROMPT + _RECENT_CHECKIN_CONTEXT_TEMPLATE.format(paragraph=recent_explanation)
 
 
 # --- Canned fallbacks. Fixed text; see module docstring for why these are
