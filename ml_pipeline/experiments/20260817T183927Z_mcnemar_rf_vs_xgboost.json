@@ -1,0 +1,35 @@
+{
+  "timestamp_utc": "20260817T183927Z",
+  "experiment_name": "mcnemar_rf_vs_xgboost_v2_test_set",
+  "description": "McNemar's test comparing Random Forest (deployed v2 model) against XGBoost (closest competitor by F1/ROC-AUC) on the same 220-row held-out test set. Addresses Chapter 2's critique (Frontiers 2026 source) of model comparisons in this literature that omit significance testing.",
+  "models_compared": {
+    "model_a": "RandomForestClassifier (deployed stress_model_v2.pkl)",
+    "model_b": "XGBClassifier, refit with hyperparameters and random_state from 20260815T135337Z_corrected_noleak_xgboost.json (no XGBoost artifact was persisted at training time; refit here only to obtain per-row test-set predictions -- not a change to the deployed model)"
+  },
+  "dataset": {
+    "path": "ml_pipeline/datasets/raw/student_stress_factors.csv"
+  },
+  "split": {
+    "test_size": 0.2,
+    "stratify": true,
+    "random_state": 42,
+    "test_rows": 220
+  },
+  "results": {
+    "rf_accuracy_this_run": 0.8818181818181818,
+    "xgb_accuracy_this_run": 0.8727272727272727,
+    "xgb_accuracy_original_experiment_log": 0.8727272727272727,
+    "contingency_table": {
+      "both_correct": 189,
+      "rf_correct_xgb_wrong": 5,
+      "xgb_correct_rf_wrong": 3,
+      "both_wrong": 23
+    },
+    "n_discordant_pairs": 8,
+    "method": "exact binomial (n_discordant < 25)",
+    "mcnemar_statistic": null,
+    "p_value": 0.7265625,
+    "alpha": 0.05,
+    "statistically_significant": false
+  }
+}

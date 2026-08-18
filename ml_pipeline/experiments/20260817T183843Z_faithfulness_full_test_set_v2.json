@@ -1,0 +1,34 @@
+{
+  "timestamp_utc": "20260817T183843Z",
+  "experiment_name": "faithfulness_full_test_set_v2",
+  "description": "Explanation faithfulness (coverage ratio + direction sanity check) computed across all 220 held-out test rows, using the same generate_explanation() logic as the 4 illustrative cases in 06_ExplanationGenerator.ipynb. Extends, does not replace, that 4-case illustration.",
+  "model_version": "v2",
+  "dataset": {
+    "path": "ml_pipeline/datasets/raw/student_stress_factors.csv"
+  },
+  "split": {
+    "test_size": 0.2,
+    "stratify": true,
+    "random_state": 42,
+    "test_rows": 220
+  },
+  "explanation_config": {
+    "top_n": 4
+  },
+  "results": {
+    "coverage_ratio": {
+      "n_cases": 220,
+      "mean": 0.5341134166707024,
+      "median": 0.5292210060522352,
+      "min": 0.41539559590871045,
+      "max": 0.6246140692029643,
+      "std": 0.04757168060473018
+    },
+    "direction_sanity_check": {
+      "total_selected_factors": 880,
+      "sign_matches": 880,
+      "pct_matching": 100.0
+    }
+  },
+  "log_file": "faithfulness_log_v2_full_test_set.jsonl"
+}

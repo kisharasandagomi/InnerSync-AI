@@ -380,6 +380,19 @@ consistent with `CLAUDE.md`.
 Excluding six features cost Random Forest **0.0046 accuracy** — which is the
 finding, not a reassurance.
 
+### Statistical significance of Random Forest vs. XGBoost
+
+Chapter 2 (citing the Frontiers 2026 source) criticises this literature for comparing models on accuracy/F1 without testing whether the difference is statistically distinguishable from chance. Random Forest and XGBoost are the two closest performers in the table above (0.8818 vs. 0.8727 accuracy, 0.8815 vs. 0.8726 F1 macro), which makes them the pair worth testing rather than asserting the gap is meaningful.
+
+McNemar's test was run on the same 220-row held-out test set, using the deployed Random Forest (`stress_model_v2.pkl`) and XGBoost refit with the exact hyperparameters and split already recorded in `20260815T135337Z_corrected_noleak_xgboost.json` (no XGBoost artifact was persisted at training time, so it was reproduced here solely to obtain per-row predictions; the reproduced accuracy matched the logged value exactly, confirming the refit is faithful to the original run). Logged as the `mcnemar_rf_vs_xgboost_v2_test_set` experiment.
+
+| | XGBoost correct | XGBoost wrong |
+|---|---|---|
+| **Random Forest correct** | 189 | 5 |
+| **Random Forest wrong** | 3 | 23 |
+
+8 discordant pairs (5 + 3), small enough that the exact binomial form of McNemar's test applies rather than the chi-square approximation. **p = 0.727** against α = 0.05. **The accuracy difference between Random Forest and XGBoost is not statistically significant** — reported as a genuine finding, not a gap in the analysis: on this test set the two models are not distinguishable by accuracy alone, and Random Forest's selection above rests on ROC-AUC, the CV→test gap, and TreeSHAP compatibility rather than on a defensible accuracy edge. This is the significance test Chapter 2 argues the field usually omits.
+
 ### 5. SHAP on the corrected model
 
 The v2 global ranking is led by `social_support` (0.0558), `basic_needs`
@@ -523,6 +536,8 @@ explanation quality with real users in Phase 8.
 On the four local cases, all 16 selected factors had stated direction matching
 SHAP sign (0 mismatches), and explanations accounted for 42–79% of total
 |SHAP| magnitude.
+
+The four cases above are illustrative walkthroughs — useful for reading a single explanation's reasoning end-to-end — not the quantitative claim. That claim is the full-dataset run: the faithfulness computation above, applied unchanged to all 220 held-out test rows (`faithfulness_log_v2_full_test_set.jsonl`, logged as the `faithfulness_full_test_set_v2` experiment). Across all 220 cases, coverage ratio was mean 0.534, median 0.529, min 0.415, max 0.625, std 0.048 — a fairly tight band, and consistent with the four-case range quoted above rather than contradicting it. Of the 880 factors selected across those 220 explanations (4 per case), all 880 had a stated direction matching the sign of the underlying SHAP value (100.0%, 0 mismatches), extending the four-case direction sanity check to the full test set with no exceptions found.
 
 ### Choice of SHAP axis (investigated, not assumed)
 
