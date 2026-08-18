@@ -59,6 +59,9 @@ class Settings:
     model_filename: str
     gemini_api_key: str
     gemini_model: str
+    resend_api_key: str
+    resend_from_email: str
+    frontend_base_url: str
 
 
 def _require(name: str) -> str:
@@ -122,4 +125,17 @@ def get_settings() -> Settings:
         # lite alias was healthy at the same moment, so it is the default
         # until that settles. Override via GEMINI_MODEL without a code change.
         gemini_model=os.environ.get("GEMINI_MODEL", "").strip() or "gemini-flash-lite-latest",
+        # Not `_require()`-d, same reasoning as `gemini_api_key`: absent at
+        # startup must not block the rest of the app. Checked instead at the
+        # point of use -- see `app.services.email.send_password_reset_email`.
+        resend_api_key=os.environ.get("RESEND_API_KEY", "").strip(),
+        # Resend's shared sandbox sending address, usable without verifying
+        # a custom domain -- appropriate for this project's scale and per
+        # the round-4 instruction to use Resend's test sending domain.
+        resend_from_email=os.environ.get("RESEND_FROM_EMAIL", "").strip()
+        or "InnerSync AI <onboarding@resend.dev>",
+        # Used only to build the clickable link inside the reset email; the
+        # backend has no other way to know the frontend's own origin.
+        frontend_base_url=os.environ.get("FRONTEND_BASE_URL", "").strip()
+        or "http://127.0.0.1:5173",
     )

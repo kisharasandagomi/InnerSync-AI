@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -37,6 +37,17 @@ class User(Base):
     # text. Kept on this table (not user_profiles) because it is an identity/
     # display attribute like email, not a demographic fairness field.
     display_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+
+    # Soft-delete flag (round 4). Deactivation never removes rows -- per
+    # docs/governance/data_management_plan.md's retention section, account
+    # and data deletion happens as a separate, deliberate process, not as a
+    # side effect of a student clicking "deactivate". A deactivated account
+    # can no longer log in (see app.api.deps.get_current_user and
+    # app.api.auth.login), but its data is untouched.
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    deactivated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     profile: Mapped["UserProfile | None"] = relationship(  # noqa: F821
         back_populates="user", uselist=False, cascade="all, delete-orphan"

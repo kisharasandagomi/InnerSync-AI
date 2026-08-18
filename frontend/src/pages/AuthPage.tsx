@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ApiError, login, register } from "../services/api";
+import { ApiError, forgotPassword, login, register } from "../services/api";
 import { useAuth } from "../services/auth";
+import { HomeContent } from "../components/HomeContent";
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "forgot";
 
 /** Combined sign-in / create-account screen. */
 export function AuthPage() {
@@ -14,6 +15,7 @@ export function AuthPage() {
   const [hobby, setHobby] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
 
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -23,6 +25,11 @@ export function AuthPage() {
     setError(null);
     setBusy(true);
     try {
+      if (mode === "forgot") {
+        await forgotPassword(email);
+        setForgotSent(true);
+        return;
+      }
       if (mode === "register") {
         await register(email, password, displayName, hobby);
       }
@@ -40,7 +47,89 @@ export function AuthPage() {
     }
   }
 
+  if (mode === "forgot") {
+    return (
+      <>
+      <div className="mx-auto max-w-sm">
+        <h1 className="text-xl font-semibold tracking-tight text-ink">
+          Reset your password
+        </h1>
+        {forgotSent ? (
+          <>
+            <p className="mt-2 text-base leading-relaxed text-ink-soft">
+              If that email is registered, a reset link has been sent. Check
+              your inbox (and spam folder) for a message from InnerSync AI.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("login");
+                setForgotSent(false);
+                setError(null);
+              }}
+              className="mt-4 text-sm font-medium text-ink underline underline-offset-2 hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              Back to sign in
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="mt-2 text-base leading-relaxed text-ink-soft">
+              Enter your account email and we will send a link to reset your
+              password.
+            </p>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
+              <div>
+                <label htmlFor="forgot-email" className="block text-base font-medium text-ink">
+                  Email
+                </label>
+                <input
+                  id="forgot-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  placeholder="you@university.ac.uk"
+                />
+              </div>
+
+              {error && (
+                <p role="alert" className="text-base text-danger">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full rounded-md bg-accent px-4 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              >
+                {busy ? "Sending…" : "Send reset link"}
+              </button>
+            </form>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("login");
+                setError(null);
+              }}
+              className="mt-4 text-sm font-medium text-ink underline underline-offset-2 hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              Back to sign in
+            </button>
+          </>
+        )}
+      </div>
+      <HomeContent />
+      </>
+    );
+  }
+
   return (
+    <>
     <div className="mx-auto max-w-sm">
       <h1 className="text-xl font-semibold tracking-tight text-ink">
         {mode === "login" ? "Sign in" : "Create an account"}
@@ -86,6 +175,18 @@ export function AuthPage() {
           />
           {mode === "register" && (
             <p className="mt-1 text-sm text-ink-faint">At least 8 characters.</p>
+          )}
+          {mode === "login" && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode("forgot");
+                setError(null);
+              }}
+              className="mt-1 text-sm text-ink-soft underline-offset-2 hover:text-accent-strong hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              Forgot password?
+            </button>
           )}
         </div>
 
@@ -140,7 +241,7 @@ export function AuthPage() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-md bg-accent px-4 py-2.5 text-base font-medium text-white transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          className="w-full rounded-md bg-accent px-4 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           {busy
             ? "Please wait…"
@@ -158,11 +259,13 @@ export function AuthPage() {
             setMode(mode === "login" ? "register" : "login");
             setError(null);
           }}
-          className="font-medium text-accent underline underline-offset-2 hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="font-medium text-ink underline underline-offset-2 hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {mode === "login" ? "Create one" : "Sign in"}
         </button>
       </p>
     </div>
+    <HomeContent />
+    </>
   );
 }

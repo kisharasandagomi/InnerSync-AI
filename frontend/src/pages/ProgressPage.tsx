@@ -90,7 +90,7 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
         </p>
         <Link
           to="/assessment"
-          className="mt-4 inline-block rounded-md border border-line px-4 py-2 text-sm text-ink-soft transition-colors hover:bg-accent-soft hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="mt-4 inline-block rounded-md border border-line px-4 py-2 text-sm text-ink-soft transition-colors hover:bg-accent-soft hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           Start your first check-in
         </Link>
@@ -105,7 +105,7 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
         <p className="text-base leading-7 text-ink">
           You've completed one check-in so far, on{" "}
           {formatDate(only.created_at)}, which came out{" "}
-          <span className="font-medium text-accent-strong">
+          <span className="font-medium text-ink">
             {only.stress_level_label}
           </span>
           .
@@ -191,12 +191,12 @@ function HistoryEntry({ item }: { item: AssessmentHistoryItem }) {
     <li className="rounded-lg border border-line bg-card p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="text-base font-medium text-ink">
-          {formatDate(item.created_at)} —{" "}
-          <span className="text-accent-strong">{item.stress_level_label}</span>
+          {formatDate(item.created_at)}:{" "}
+          <span className="text-ink">{item.stress_level_label}</span>
         </p>
         <div className="flex gap-2">
           {item.is_escalation && (
-            <span className="rounded-full border border-accent bg-accent-soft/60 px-2 py-0.5 text-xs text-accent-strong">
+            <span className="rounded-full border border-accent bg-accent-soft/60 px-2 py-0.5 text-xs text-ink">
               Pointed toward wellbeing services
             </span>
           )}
@@ -221,7 +221,7 @@ function HistoryEntry({ item }: { item: AssessmentHistoryItem }) {
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
             aria-controls={detailId}
-            className="mt-2 text-sm font-medium text-accent-strong underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="mt-2 text-sm font-medium text-ink underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {expanded ? "Show less" : "Show the full explanation"}
           </button>

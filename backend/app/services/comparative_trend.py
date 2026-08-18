@@ -37,7 +37,7 @@ from ml_pipeline.src.explainability.generator import validate_user_facing_text
 # precise measurement ("improved by X%") or overclaiming ("you're fixed") —
 # same discipline as every other user-facing template in this system.
 COMPARATIVE_IMPROVED_MESSAGE = (
-    "Things seem to be feeling a bit lighter than your last check-in — that's worth "
+    "Things seem to be feeling a bit lighter than your last check-in, and that's worth "
     "noticing, even if it's a small shift."
 )
 
@@ -50,7 +50,7 @@ COMPARATIVE_SAME_MESSAGE = "This check-in looks fairly similar to your last one.
 # self-compassion-focused, explicitly not clinical or alarming.
 COMPARATIVE_WORSE_MESSAGE = (
     "It looks like things have felt a bit harder since your last check-in. Be gentle "
-    "with yourself — this is a snapshot, not a verdict."
+    "with yourself: this is a snapshot, not a verdict."
 )
 
 # Shown instead of any of the three above whenever this check-in also

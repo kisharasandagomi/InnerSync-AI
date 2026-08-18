@@ -28,3 +28,5 @@ When building or reviewing the Human-Centered Explanation Generator, check:
 When evaluating explanations with real users later, these four properties
 (clarity, trust, faithfulness, usefulness) are the metrics to test, not just
 "did they like it."
+
+Style rule (round 4): no em-dashes (—) in any generated or static user-facing text (explanation/recommendation/comparative-trend/greeting templates, chatbot system prompt and fallback replies, static frontend copy). Use a comma, period, colon, or restructured sentence instead, whichever reads most naturally for that instance. Applies to new text going forward, not to code comments or docstrings.

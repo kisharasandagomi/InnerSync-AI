@@ -38,7 +38,7 @@ export function ScaleField({ field, value, onChange }: ScaleFieldProps) {
               onClick={() => onChange(field.name, opt.v)}
               className={`rounded-md border px-4 py-2 text-base transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 value === opt.v
-                  ? "border-accent bg-accent-soft font-medium text-accent-strong"
+                  ? "border-accent bg-accent-soft font-medium text-ink"
                   : "border-line text-ink-soft hover:bg-accent-soft/50"
               }`}
             >
@@ -66,7 +66,7 @@ export function ScaleField({ field, value, onChange }: ScaleFieldProps) {
             <span>{field.lowLabel}</span>
             <span
               id={`${inputId}-value`}
-              className="rounded bg-accent-soft px-2 py-0.5 font-medium text-accent-strong"
+              className="rounded bg-accent-soft px-2 py-0.5 font-medium text-ink"
             >
               {value}
             </span>

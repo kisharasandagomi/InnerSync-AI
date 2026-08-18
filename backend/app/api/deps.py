@@ -49,7 +49,9 @@ def get_current_user(
         raise unauthorized from exc
 
     user = db.get(User, user_id)
-    if user is None:
+    if user is None or not user.is_active:
+        # A still-unexpired token for a since-deactivated account must not
+        # keep working -- see app.api.auth's deactivate endpoint.
         raise unauthorized
     return user
 

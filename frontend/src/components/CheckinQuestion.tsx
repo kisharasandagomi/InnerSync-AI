@@ -31,7 +31,7 @@ export function CheckinQuestionControl({ question, onAnswerFeature, onAnswerEnga
             key={opt.value}
             type="button"
             onClick={() => onAnswerEngagement(opt.value as PreviousEngagement)}
-            className="rounded-full border border-line bg-card px-4 py-2 text-base text-ink-soft transition-colors hover:border-accent hover:bg-accent-soft hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="rounded-full border border-line bg-card px-4 py-2 text-base text-ink-soft transition-colors hover:border-accent hover:bg-accent-soft hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {opt.label}
           </button>
@@ -91,7 +91,7 @@ function Chip({ label, onClick }: { label: string; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full border border-line bg-card px-4 py-2 text-base text-ink-soft transition-colors hover:border-accent hover:bg-accent-soft hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="rounded-full border border-line bg-card px-4 py-2 text-base text-ink-soft transition-colors hover:border-accent hover:bg-accent-soft hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
       {label}
     </button>
@@ -164,7 +164,7 @@ function SliderAnswer({
       />
       <div className="mt-1 flex items-center justify-between text-sm text-ink-faint">
         <span>{field.lowLabel}</span>
-        <span className="rounded bg-accent-soft px-2 py-0.5 font-medium text-accent-strong">
+        <span className="rounded bg-accent-soft px-2 py-0.5 font-medium text-ink">
           {value}
         </span>
         <span>{field.highLabel}</span>
@@ -172,7 +172,7 @@ function SliderAnswer({
       <button
         type="button"
         onClick={() => onAnswer(value)}
-        className="mt-3 w-full rounded-md bg-accent px-4 py-2 text-base font-medium text-white transition-colors hover:bg-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+        className="mt-3 w-full rounded-md bg-accent px-4 py-2 text-base font-medium text-ink transition-colors hover:bg-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
       >
         Continue
       </button>

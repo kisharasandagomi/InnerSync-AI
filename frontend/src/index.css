@@ -7,15 +7,26 @@
    coding a medical dashboard would use — colour is never load-bearing for
    the stress level, the wording carries it. */
 @theme {
-  --color-ink: #1c2321;
-  --color-ink-soft: #4a5754;
-  --color-ink-faint: #7c8a86;
-  --color-surface: #fbfaf7;
+  /* Round 4: site-wide navy / gold / off-white re-theme (previously a
+     muted sage-green palette, still visible only in git history now).
+     Navy carries all primary reading text, headings, and the nav bar --
+     it is the "ink" of the app, same as before, just a different hue.
+     Gold is reserved for CTAs, borders, and small highlight chips --
+     never for body-sized text on a light background: gold at a
+     lightness that still reads as "gold" sits under 4.5:1 contrast on
+     white (verified: ~3.3:1 for --color-accent, ~3.5:1 for
+     --color-accent-strong), so neither is used as a text colour outside
+     dark surfaces (the navy nav bar) or as text atop its own gold
+     background, where a navy foreground is used instead. */
+  --color-ink: #14213d;
+  --color-ink-soft: #3b5273;
+  --color-ink-faint: #6b7c93;
+  --color-surface: #faf7f0;
   --color-card: #ffffff;
-  --color-line: #e4e2dc;
-  --color-accent: #3f6b5f;
-  --color-accent-soft: #eaf1ee;
-  --color-accent-strong: #2f5348;
+  --color-line: #dee3ea;
+  --color-accent: #c99a2e;
+  --color-accent-soft: #f6ecd2;
+  --color-accent-strong: #a8841f;
   --color-danger: #8a4a42;
 }
 

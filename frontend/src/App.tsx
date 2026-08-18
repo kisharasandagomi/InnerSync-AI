@@ -5,7 +5,9 @@ import { AuthPage } from "./pages/AuthPage";
 import { ChatPage } from "./pages/ChatPage";
 import { LandingPage } from "./pages/LandingPage";
 import { ProgressPage } from "./pages/ProgressPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { ResultsPage } from "./pages/ResultsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { useAuth } from "./services/auth";
 
 /** Sends unauthenticated visitors back to the sign-in screen. */
@@ -24,6 +26,7 @@ export function App() {
           path="/"
           element={isAuthenticated ? <LandingPage /> : <AuthPage />}
         />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/assessment"
           element={
@@ -53,6 +56,14 @@ export function App() {
           element={
             <RequireAuth>
               <ChatPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RequireAuth>
+              <SettingsPage />
             </RequireAuth>
           }
         />

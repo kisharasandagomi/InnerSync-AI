@@ -34,6 +34,11 @@ os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-key-not-for-production
 # a real key to backend/.env for live verification made
 # test_missing_gemini_api_key_returns_a_clear_503 fail for the wrong reason.
 os.environ.setdefault("GEMINI_API_KEY", "")
+# Same reasoning as GEMINI_API_KEY above, for RESEND_API_KEY (round 4's
+# password reset feature): deterministic 'not configured' behaviour by
+# default, regardless of a developer's local backend/.env. Tests that need
+# the configured happy path monkeypatch app.api.auth.get_settings instead.
+os.environ.setdefault("RESEND_API_KEY", "")
 
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import create_engine  # noqa: E402

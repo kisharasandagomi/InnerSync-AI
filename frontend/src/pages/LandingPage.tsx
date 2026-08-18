@@ -32,7 +32,7 @@ export function LandingPage() {
       <button
         type="button"
         onClick={() => navigate("/chat", { state: { mode: "checkin" } })}
-        className="mt-8 w-full rounded-md bg-accent px-6 py-3.5 text-base font-medium text-white transition-colors hover:bg-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:w-auto"
+        className="mt-8 w-full rounded-md bg-accent px-6 py-3.5 text-base font-medium text-ink transition-colors hover:bg-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:w-auto"
       >
         Start your check-in
       </button>
@@ -41,13 +41,13 @@ export function LandingPage() {
         <button
           type="button"
           onClick={() => navigate("/chat", { state: { mode: "talk" } })}
-          className="underline-offset-4 hover:text-accent-strong hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="underline-offset-4 hover:text-ink hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           Just want to talk instead? Open chat
         </button>
         <Link
           to="/assessment"
-          className="text-ink-faint underline-offset-4 hover:text-accent-strong hover:underline"
+          className="text-ink-faint underline-offset-4 hover:text-ink hover:underline"
         >
           Prefer the classic form?
         </Link>

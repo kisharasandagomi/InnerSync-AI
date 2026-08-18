@@ -6,6 +6,8 @@ reads it from `.env`.
 
 from __future__ import annotations
 
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -89,6 +91,33 @@ def create_access_token(subject: str, expires_minutes: int | None = None) -> str
         "exp": now + timedelta(minutes=minutes),
     }
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+
+
+def generate_reset_token() -> str:
+    """Generate a single-use password reset token.
+
+    Returns:
+        A cryptographically random, URL-safe string. Only its hash (see
+        `hash_reset_token`) is ever persisted -- this raw value exists only
+        for the length of one request/response cycle and inside the emailed
+        link itself.
+    """
+    return secrets.token_urlsafe(32)
+
+
+def hash_reset_token(token: str) -> str:
+    """Hash a reset token for storage/lookup.
+
+    Args:
+        token: The raw token, as emailed to the student.
+
+    Returns:
+        Its SHA-256 hex digest. Reset tokens are single-use, short-lived,
+        high-entropy random values (not passwords, which are low-entropy and
+        reused across sites), so a fast hash is the right tool here, unlike
+        `hash_password`'s deliberately slow bcrypt.
+    """
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def decode_access_token(token: str) -> str | None:

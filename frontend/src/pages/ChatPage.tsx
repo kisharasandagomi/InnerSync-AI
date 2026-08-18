@@ -47,7 +47,7 @@ type Mode = "menu" | "talk" | "checkin";
  */
 const INTRO_MESSAGE =
   "Hi, I'm here to talk through how things are going. I'm an AI wellbeing " +
-  "check-in, not a counsellor — if you'd rather talk to a person, your " +
+  "check-in, not a counsellor. If you'd rather talk to a person, your " +
   "university wellbeing service is a great place to start. What's on your mind?";
 
 interface LocalMessage {
@@ -251,14 +251,14 @@ export function ChatPage() {
         <button
           type="button"
           onClick={() => setMode("menu")}
-          className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-soft transition-colors hover:bg-accent-soft hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-soft transition-colors hover:bg-accent-soft hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           Change mode
         </button>
       </div>
 
       {activeQuestion?.kind === "feature" && (
-        <p className="mt-3 text-sm font-medium text-accent-strong">
+        <p className="mt-3 text-sm font-medium text-ink">
           Question {activeQuestion.index} of {activeQuestion.total}
         </p>
       )}
@@ -315,7 +315,7 @@ export function ChatPage() {
           <button
             type="submit"
             disabled={sending || draft.trim().length === 0}
-            className="rounded-full border border-accent bg-accent-soft px-5 py-2.5 text-base font-medium text-accent-strong transition-colors hover:bg-accent-soft/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-accent bg-accent-soft px-5 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-soft/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             {sending ? "Sending…" : "Send"}
           </button>
@@ -327,13 +327,13 @@ export function ChatPage() {
           <button
             type="button"
             onClick={startOver}
-            className="rounded-md border border-line px-4 py-2 text-base text-ink-soft transition-colors hover:bg-accent-soft hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="rounded-md border border-line px-4 py-2 text-base text-ink-soft transition-colors hover:bg-accent-soft hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             Start another check-in
           </button>
           <Link
             to="/progress"
-            className="text-base text-ink-soft underline-offset-4 hover:text-accent-strong hover:underline"
+            className="text-base text-ink-soft underline-offset-4 hover:text-ink hover:underline"
           >
             See My Trends
           </Link>
@@ -356,7 +356,7 @@ function ModeMenu({ onChoose }: { onChoose: (mode: Mode) => void }) {
           onClick={() => onChoose("checkin")}
           className="rounded-lg border border-accent bg-accent-soft px-5 py-6 text-left transition-colors hover:bg-accent-soft/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <p className="text-base font-semibold text-accent-strong">Start a check-in</p>
+          <p className="text-base font-semibold text-ink">Start a check-in</p>
           <p className="mt-1 text-sm text-ink-soft">
             14 quick questions, one at a time, then a plain-language read on
             things.
@@ -384,7 +384,7 @@ function Bubble({ role, content }: { role: "user" | "assistant"; content: string
       <p
         className={`max-w-[85%] whitespace-pre-line rounded-2xl px-5 py-3 text-base leading-7 sm:max-w-[70%] ${
           isUser
-            ? "bg-accent-strong text-white"
+            ? "bg-accent-strong text-ink"
             : "border border-line/60 bg-[var(--chat-bubble-assistant)] text-ink"
         }`}
       >
@@ -449,7 +449,7 @@ const ENGAGEMENT_LABELS: Record<PreviousEngagement, string> = {
 
 function questionPrompt(question: CheckinQuestion): string {
   if (question.kind === "engagement") {
-    return "Before we start — did you try the suggestions from your last check-in?";
+    return "Before we start, did you try the suggestions from your last check-in?";
   }
   return `Question ${question.index} of ${question.total}: ${question.field.label}\n${question.field.help}`;
 }

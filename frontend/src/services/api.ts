@@ -153,6 +153,35 @@ export function register(
   );
 }
 
+/** Deactivate the caller's own account. Requires their current password. */
+export function deactivateAccount(password: string, token: string) {
+  return request<void>(
+    "/auth/deactivate",
+    { method: "POST", body: JSON.stringify({ password }) },
+    token,
+  );
+}
+
+/**
+ * Request a password reset link. The backend always returns the same
+ * generic confirmation, whether or not `email` belongs to a registered
+ * account -- see `backend/app/api/auth.py`'s `forgot_password` docstring.
+ */
+export function forgotPassword(email: string) {
+  return request<{ message: string }>(
+    "/auth/forgot-password",
+    { method: "POST", body: JSON.stringify({ email }) },
+  );
+}
+
+/** Set a new password given a valid, unused, unexpired reset token. */
+export function resetPassword(token: string, newPassword: string) {
+  return request<void>(
+    "/auth/reset-password",
+    { method: "POST", body: JSON.stringify({ token, new_password: newPassword }) },
+  );
+}
+
 export function login(email: string, password: string) {
   return request<{ access_token: string; token_type: string; display_name: string | null }>(
     "/auth/login",

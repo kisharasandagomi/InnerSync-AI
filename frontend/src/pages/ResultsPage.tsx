@@ -1,5 +1,6 @@
 import { Link, Navigate, useLocation } from "react-router-dom";
 import type { AssessmentResult } from "../services/api";
+import { downloadAssessmentReport } from "../services/pdfReport";
 
 /**
  * Displays the backend's response.
@@ -30,7 +31,7 @@ export function ResultsPage() {
           red badge would read as an alarm, and severity is not a diagnosis. */}
       <h1 className="mt-2 text-xl font-semibold tracking-tight text-ink">
         Things look{" "}
-        <span className="text-accent-strong">{result.stress_level_label}</span>{" "}
+        <span className="text-ink">{result.stress_level_label}</span>{" "}
         right now
       </h1>
 
@@ -51,7 +52,7 @@ export function ResultsPage() {
           role="note"
           aria-label="Wellbeing service signpost"
         >
-          <h2 className="text-sm font-semibold tracking-tight text-accent-strong">
+          <h2 className="text-sm font-semibold tracking-tight text-ink">
             Worth reaching out
           </h2>
           <p className="mt-3 whitespace-pre-line text-base leading-7 text-ink">
@@ -78,7 +79,7 @@ export function ResultsPage() {
                   <div className="flex items-baseline gap-3">
                     <span
                       aria-hidden="true"
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent-strong"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-ink"
                     >
                       {rec.priority}
                     </span>
@@ -111,15 +112,22 @@ export function ResultsPage() {
       )}
 
       <div className="mt-8 flex flex-wrap items-center gap-4">
+        <button
+          type="button"
+          onClick={() => downloadAssessmentReport(result)}
+          className="rounded-md border border-line px-4 py-2 text-sm text-ink-soft transition-colors hover:bg-accent-soft hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          Download report
+        </button>
         <Link
           to="/assessment"
-          className="rounded-md border border-line px-4 py-2 text-sm text-ink-soft transition-colors hover:bg-accent-soft hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="rounded-md border border-line px-4 py-2 text-sm text-ink-soft transition-colors hover:bg-accent-soft hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           Start another check-in
         </Link>
         <Link
           to="/progress"
-          className="text-sm text-ink-soft underline-offset-4 hover:text-accent-strong hover:underline"
+          className="text-sm text-ink-soft underline-offset-4 hover:text-ink hover:underline"
         >
           See My Trends
         </Link>

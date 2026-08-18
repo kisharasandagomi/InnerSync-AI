@@ -522,6 +522,10 @@ the load-bearing work. A hybrid (LLM rephrasing of template output, gated by
 the same validator) is a reasonable future extension and is noted as such
 rather than attempted here.
 
+### Style rule: no em-dashes in user/model-facing text
+
+As of round 4, no em-dash (—) may appear in any text a student or the chatbot's underlying model actually reads: explanation, recommendation, comparative-trend, and greeting templates; the chatbot's system prompt and canned fallback replies; and static frontend copy (landing page, auth page, results/assessment/progress page copy, page title). A comma, period, colon, or restructured sentence is used instead, chosen per instance for what reads most naturally, not by mechanical find-replace. This does not apply to code comments or docstrings, which are internal developer documentation rather than user- or model-facing content.
+
 ### Faithfulness logging
 
 Every generated explanation carries a record — feature, raw value, signed SHAP

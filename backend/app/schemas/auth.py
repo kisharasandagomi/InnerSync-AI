@@ -52,6 +52,40 @@ class UserRegisterRequest(BaseModel):
     hobby: str | None = Field(default=None, max_length=80)
 
 
+class DeactivateAccountRequest(BaseModel):
+    """Deactivation payload. Requires the current password, same as any
+    other destructive account action, so a stolen still-valid access token
+    alone cannot deactivate an account without also knowing the password."""
+
+    password: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Forgot-password payload. Just the email -- the response is identical
+    whether or not it belongs to a registered account, so no other input is
+    needed here."""
+
+    email: EmailAddress
+
+
+class ForgotPasswordResponse(BaseModel):
+    """Always the same message, sent whether or not the email is registered.
+
+    Mirrors `login`'s existing account-enumeration discipline: a distinct
+    "no account with that email" response would let a caller enumerate
+    registered addresses one guess at a time.
+    """
+
+    message: str = "If that email is registered, a reset link has been sent."
+
+
+class ResetPasswordRequest(BaseModel):
+    """Reset-password payload: the emailed single-use token and a new password."""
+
+    token: str
+    new_password: str = Field(min_length=8, max_length=72)
+
+
 class UserLoginRequest(BaseModel):
     """Login payload."""
 

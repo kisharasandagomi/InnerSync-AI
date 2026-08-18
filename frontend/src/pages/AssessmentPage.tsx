@@ -65,8 +65,8 @@ export function AssessmentPage() {
         How are things at the moment?
       </h1>
       <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-soft">
-        Fourteen quick questions. Answer for how the last week or two has felt —
-        there are no right answers, and nothing here is a test.
+        Fourteen quick questions. Answer for how the last week or two has felt.
+        There are no right answers, and nothing here is a test.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6" noValidate>
@@ -78,7 +78,7 @@ export function AssessmentPage() {
             Did you try the suggestions from your last check-in?
           </label>
           <p className="mt-1 text-sm text-ink-faint">
-            There's no wrong answer here — this just helps keep suggestions
+            There's no wrong answer here. This just helps keep suggestions
             useful over time.
           </p>
           <select
@@ -119,7 +119,7 @@ export function AssessmentPage() {
           <button
             type="submit"
             disabled={busy}
-            className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
             {busy ? "Working…" : "See my check-in"}
           </button>

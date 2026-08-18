@@ -85,8 +85,8 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             category="self_reflection",
             title="A short weekly note on what went well",
             action=(
-                "At the end of this week, write down three things you handled well "
-                "— however small, including ordinary ones like getting to a 9am or "
+                "At the end of this week, write down three things you handled well, "
+                "however small, including ordinary ones like getting to a 9am or "
                 "replying to a message you had been putting off."
             ),
             rationale=(
@@ -116,8 +116,8 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             title="Return to something that helped before",
             action=(
                 "Think of one thing that genuinely helped when you last felt "
-                "stretched — a person you spoke to, a routine, a service you used "
-                "— and take the first step back toward it this week."
+                "stretched: a person you spoke to, a routine, a service you used. "
+                "Take the first step back toward it this week."
             ),
             rationale=(
                 "You have navigated periods like this before, and what worked then "
@@ -130,7 +130,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             # set, or the interpolated text ever fails the safety gate.
             hobby_action_template=(
                 "Think of one thing that genuinely helped when you last felt "
-                "stretched — for you, that might be {hobby} — and take the first "
+                "stretched (for you, that might be {hobby}) and take the first "
                 "step back toward it this week."
             ),
         ),
@@ -139,7 +139,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             title="Tell one person briefly what's going on",
             action=(
                 "Pick one person you trust and tell them, in a sentence or two, "
-                "that things have felt heavy lately — you don't need a plan, just "
+                "that things have felt heavy lately. You don't need a plan, just "
                 "to say it out loud to someone."
             ),
             rationale=(
@@ -155,7 +155,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             title="Break up long screen stretches",
             action=(
                 "For the next three study sessions, stop every 45 minutes and look "
-                "away from your screen for two minutes — standing up and refilling "
+                "away from your screen for two minutes. Standing up and refilling "
                 "a glass of water is enough."
             ),
             rationale=(
@@ -185,7 +185,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             title="A two-minute breathing reset",
             action=(
                 "Once a day this week, sit down and breathe in for a count of "
-                "four, hold for four, out for four, hold for four — repeat eight "
+                "four, hold for four, out for four, hold for four, then repeat eight "
                 "times. Set it to a fixed moment, such as just before you start "
                 "studying."
             ),
@@ -199,7 +199,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             category="physical",
             title="Get outside for a few minutes",
             action=(
-                "Once today, step outside for five minutes — no phone, just "
+                "Once today, step outside for five minutes: no phone, just "
                 "walking or standing somewhere with open air."
             ),
             rationale=(
@@ -243,7 +243,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             title="Change one thing about your main space",
             action=(
                 "Pick the single thing about your room that irritates you most and "
-                "change it this week — clearing the desk surface you work at, or "
+                "change it this week, clearing the desk surface you work at, or "
                 "moving where you charge your phone overnight."
             ),
             rationale=(
@@ -256,8 +256,8 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             category="environment",
             title="Spend deliberate time somewhere else",
             action=(
-                "Book out two or three hours this week in a different environment "
-                "— a library, a café, a friend's place — somewhere that isn't the "
+                "Book out two or three hours this week in a different environment, "
+                "such as a library, a café, or a friend's place, somewhere that isn't the "
                 "space that's bothering you."
             ),
             rationale=(
@@ -302,7 +302,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             title="Check what your university already offers",
             action=(
                 "Look up your students' union or student services page for "
-                "hardship support this week — most universities have a fund, a food "
+                "hardship support this week. Most universities have a fund, a food "
                 "pantry, or an adviser, and applying is usually a short form."
             ),
             rationale=(
@@ -363,7 +363,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             action=(
                 "Write out every deadline for the next three weeks, then block the "
                 "hours you will spend on each into your calendar. If the hours do "
-                "not fit, that is the point — take that to your personal tutor."
+                "not fit, that is the point: take that to your personal tutor."
             ),
             rationale=(
                 "A workload that feels impossible in the abstract is easier to deal "
@@ -391,7 +391,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             title="One low-stakes contact with teaching staff",
             action=(
                 "Email one lecturer or your personal tutor this week with a single "
-                "specific question about the course — not about how you are coping, "
+                "specific question about the course, not about how you are coping, "
                 "just about the work."
             ),
             rationale=(
@@ -420,7 +420,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             title="Reach one person directly",
             action=(
                 "Message one person you have not spoken to properly in a few weeks "
-                "and suggest something specific and short — a coffee between "
+                "and suggest something specific and short, such as a coffee between "
                 "lectures, or a walk on a named day."
             ),
             rationale=(
@@ -433,8 +433,8 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             category="social",
             title="Join one structured activity",
             action=(
-                "Go to one university club, society, or group session this week "
-                "— something with a set time and place, rather than something you "
+                "Go to one university club, society, or group session this week: "
+                "something with a set time and place, rather than something you "
                 "have to organise yourself."
             ),
             rationale=(
@@ -450,7 +450,7 @@ RECOMMENDATION_CATALOGUE: dict[str, list[RecommendationTemplate]] = {
             title="Decline one thing this week",
             action=(
                 "Identify one invitation or expectation this week that you would "
-                "rather not take on, and say no to it plainly — no explanation "
+                "rather not take on, and say no to it plainly. No explanation is "
                 "required beyond that it does not work for you."
             ),
             rationale=(
