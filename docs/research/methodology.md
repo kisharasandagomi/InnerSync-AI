@@ -522,6 +522,44 @@ the load-bearing work. A hybrid (LLM rephrasing of template output, gated by
 the same validator) is a reasonable future extension and is noted as such
 rather than attempted here.
 
+### Static wellbeing article content (round 5)
+
+Three further articles were added to the public homepage alongside the
+existing three (see `frontend/src/components/HomeContent.tsx`), following an
+exact structure and tone specified and reviewed before implementation, given
+that one of the three ("You are not alone, and help works") discusses
+suicide directly. All three were run through
+`validate_user_facing_text()` -- the same vocabulary safety gate applied to
+generated explanations and recommendations -- as an extra check, even though
+this is static copy rather than model output.
+
+**Deliberate, reviewed exception: "professional support and treatment".**
+The second article ("Common life stressors and getting support") uses the
+exact phrase "professional support and treatment" at the project owner's
+explicit request, which trips `FORBIDDEN_CLINICAL_TERMS`'s `treat`/`treatment`
+entries. This is not a bypass of that gate, and the gate itself is not wrong:
+`FORBIDDEN_CLINICAL_TERMS` exists so InnerSync's own generated text never
+describes *itself* as diagnosing or treating a student (see
+`ml_pipeline/src/explainability/templates.py`'s module docstring and
+`.claude/skills/explainable-ai/SKILL.md`). This article does the opposite --
+it is static copy that points a student toward real, external professional
+care, which is the ethical requirement `CLAUDE.md` states directly
+("recommend professional help when high-risk patterns persist"). The
+concern the gate exists to catch does not apply to a sentence recommending
+that a student see a GP or counsellor. Reviewed and approved explicitly
+before implementation; not to be read as precedent for loosening the gate
+itself, which remains unchanged and still applies in full to every
+generated explanation and recommendation.
+
+**Article A's crisis-line numbers.** Rather than retyping the two phone
+numbers repeated inside "You are not alone, and help works", that article's
+component reads them directly from the same `DIRECTORY` array the full
+Sri Lanka mental health support directory below it renders from (see
+`HomeContent.tsx`) -- looked up by organisation name, not array index, so a
+future reordering of the directory cannot silently point the article at the
+wrong entry. This makes transcription drift between the two structurally
+impossible rather than something to check by proofreading.
+
 ### Style rule: no em-dashes in user/model-facing text
 
 As of round 4, no em-dash (—) may appear in any text a student or the chatbot's underlying model actually reads: explanation, recommendation, comparative-trend, and greeting templates; the chatbot's system prompt and canned fallback replies; and static frontend copy (landing page, auth page, results/assessment/progress page copy, page title). A comma, period, colon, or restructured sentence is used instead, chosen per instance for what reads most naturally, not by mechanical find-replace. This does not apply to code comments or docstrings, which are internal developer documentation rather than user- or model-facing content.

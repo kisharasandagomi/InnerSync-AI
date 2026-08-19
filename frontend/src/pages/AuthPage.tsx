@@ -4,11 +4,11 @@ import { ApiError, forgotPassword, login, register } from "../services/api";
 import { useAuth } from "../services/auth";
 import { HomeContent } from "../components/HomeContent";
 
-type Mode = "login" | "register" | "forgot";
+type Mode = "welcome" | "login" | "register" | "forgot";
 
 /** Combined sign-in / create-account screen. */
 export function AuthPage() {
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>("welcome");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -25,7 +25,40 @@ export function AuthPage() {
     setError(null);
     setBusy(true);
     try {
-      if (mode === "forgot") {
+      if (mode === "welcome") {
+    return (
+      <>
+      <div className="mx-auto max-w-sm text-center">
+        <h1 className="text-xl font-semibold tracking-tight text-ink">
+          Welcome to InnerSync AI
+        </h1>
+        <p className="mt-2 text-base leading-relaxed text-ink-soft">
+          A private space to check in on how you're doing, and get
+          plain-language support tailored to it.
+        </p>
+        <div className="mt-8 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => setMode("login")}
+            className="w-full rounded-md bg-accent px-4 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("register")}
+            className="w-full rounded-md border border-line px-4 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            Create Account
+          </button>
+        </div>
+      </div>
+      <HomeContent />
+      </>
+    );
+  }
+
+  if (mode === "forgot") {
         await forgotPassword(email);
         setForgotSent(true);
         return;
@@ -45,6 +78,39 @@ export function AuthPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (mode === "welcome") {
+    return (
+      <>
+      <div className="mx-auto max-w-sm text-center">
+        <h1 className="text-xl font-semibold tracking-tight text-ink">
+          Welcome to InnerSync AI
+        </h1>
+        <p className="mt-2 text-base leading-relaxed text-ink-soft">
+          A private space to check in on how you're doing, and get
+          plain-language support tailored to it.
+        </p>
+        <div className="mt-8 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => setMode("login")}
+            className="w-full rounded-md bg-accent px-4 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("register")}
+            className="w-full rounded-md border border-line px-4 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            Create Account
+          </button>
+        </div>
+      </div>
+      <HomeContent />
+      </>
+    );
   }
 
   if (mode === "forgot") {
