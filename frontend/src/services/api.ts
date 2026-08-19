@@ -75,6 +75,15 @@ export interface AssessmentHistoryItem {
   top_factor_phrase: string | null;
   /** That check-in's full explanation paragraph, verbatim — see ProgressPage's expandable entries. */
   explanation: string;
+  /**
+   * Round 6: that check-in's ranked actions, verbatim -- empty when
+   * `is_affirmation` or `is_escalation` is true, same mutual-exclusivity as
+   * `AssessmentResult`.
+   */
+  recommendations: RecommendationItem[];
+  is_affirmation: boolean;
+  affirmation: string | null;
+  escalation_message: string | null;
 }
 
 export class ApiError extends Error {

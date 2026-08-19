@@ -97,6 +97,10 @@ def test_history_item_shape_and_vocabulary(client: TestClient) -> None:
         "is_escalation",
         "top_factor_phrase",
         "explanation",
+        "recommendations",
+        "is_affirmation",
+        "affirmation",
+        "escalation_message",
     ):
         assert field in item, f"missing field: {field}"
 
@@ -127,3 +131,49 @@ def test_history_explanation_matches_what_was_returned_at_submission_time(
 
     assert len(history) == 1
     assert history[0]["explanation"] == original_explanation
+
+
+
+def test_history_recommendations_match_what_was_returned_at_submission_time(
+    client: TestClient,
+) -> None:
+    """Round 6: the Progress page's expandable entries now show each past
+    check-in's recommendations. This is the same reuse contract already
+    verified for `explanation` above, applied to `recommendations`: the
+    history endpoint's list must be byte-identical to what `POST
+    /assessments` actually returned, not regenerated or reformatted."""
+    headers = _register_and_login(client, "recommendations.replay@example.ac.uk")
+
+    submit_response = client.post(
+        "/assessments", json=NOTEBOOK_CASE_HIGH_STRESS, headers=headers
+    )
+    submitted = submit_response.json()
+
+    history = client.get("/assessments/history", headers=headers).json()
+
+    assert len(history) == 1
+    item = history[0]
+    assert item["recommendations"] == submitted["recommendations"]
+    assert item["is_affirmation"] == submitted["is_affirmation"]
+    assert item["affirmation"] == submitted["affirmation"]
+    assert item["escalation_message"] == submitted["escalation_message"]
+    # This particular case has real recommended actions (not an affirmation
+    # or escalation) -- confirm the test actually exercises a non-empty list
+    # rather than trivially passing on all-empty/null fields.
+    assert len(item["recommendations"]) > 0
+
+
+def test_history_recommendations_carry_no_forbidden_vocabulary(client: TestClient) -> None:
+    """Same vocabulary discipline as test_history_item_shape_and_vocabulary,
+    extended to the newly-added recommendation fields specifically."""
+    headers = _register_and_login(client, "recommendations.vocab@example.ac.uk")
+    client.post("/assessments", json=NOTEBOOK_CASE_HIGH_STRESS, headers=headers)
+
+    response = client.get("/assessments/history", headers=headers)
+    item = response.json()[0]
+
+    recommendations_text = " ".join(
+        f"{r['title']} {r['action']} {r['rationale']}" for r in item["recommendations"]
+    ).lower()
+    for term in ("shap", "feature", "importance", "severity", "diagnosis", "treatment"):
+        assert term not in recommendations_text, f"leaked forbidden vocabulary: {term}"

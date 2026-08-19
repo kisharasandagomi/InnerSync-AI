@@ -155,3 +155,25 @@ class AssessmentHistoryItem(BaseModel):
     explanation: str = Field(
         description="This check-in's full plain-language explanation paragraph, verbatim"
     )
+
+    # Round 6: the Progress page's expandable entries previously showed only
+    # `explanation`, even though the ranked actions / affirmation / escalation
+    # text for every past check-in already exists in the `recommendations`
+    # table. Same reuse discipline as `explanation` and `top_factor_phrase`
+    # above -- these are that check-in's exact, already safety-gated text,
+    # never regenerated.
+    recommendations: list[RecommendationItem] = Field(
+        default_factory=list,
+        description="This check-in's ranked actions, verbatim. Empty for an affirmation or escalation.",
+    )
+    is_affirmation: bool = Field(
+        default=False,
+        description="True when this check-in's plan was an affirmation rather than actions",
+    )
+    affirmation: str | None = Field(
+        default=None, description="This check-in's affirmation text, verbatim, if any"
+    )
+    escalation_message: str | None = Field(
+        default=None,
+        description="This check-in's wellbeing-service signpost text, verbatim, if is_escalation",
+    )

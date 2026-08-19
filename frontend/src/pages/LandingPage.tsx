@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../services/auth";
+import { resolveGreetingName } from "../services/greeting";
 
 /**
  * The default view after signing in.
@@ -12,13 +13,15 @@ import { useAuth } from "../services/auth";
  * `docs/research/methodology.md` § Chat-Driven Check-In Delivery).
  */
 export function LandingPage() {
-  const { email } = useAuth();
+  const { email, displayName } = useAuth();
   const navigate = useNavigate();
 
   return (
     <div className="mx-auto max-w-xl text-center">
       <p className="text-sm uppercase tracking-wider text-ink-faint">
-        {email ? `Welcome back, ${email}` : "Welcome"}
+        {email
+          ? `Welcome back, ${resolveGreetingName(displayName, email)}`
+          : "Welcome"}
       </p>
       <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
         How are things going?

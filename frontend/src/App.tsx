@@ -6,6 +6,7 @@ import { ChatPage } from "./pages/ChatPage";
 import { LandingPage } from "./pages/LandingPage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { ResourcesPage } from "./pages/ResourcesPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { useAuth } from "./services/auth";
@@ -64,6 +65,14 @@ export function App() {
           element={
             <RequireAuth>
               <SettingsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/resources"
+          element={
+            <RequireAuth>
+              <ResourcesPage />
             </RequireAuth>
           }
         />

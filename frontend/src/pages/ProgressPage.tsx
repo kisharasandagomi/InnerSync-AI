@@ -226,12 +226,40 @@ function HistoryEntry({ item }: { item: AssessmentHistoryItem }) {
             {expanded ? "Show less" : "Show the full explanation"}
           </button>
           {expanded && (
-            <p
+            <div
               id={detailId}
-              className="mt-2 whitespace-pre-line rounded-md bg-accent-soft/30 p-3 text-sm leading-6 text-ink-soft"
+              className="mt-2 rounded-md bg-accent-soft/30 p-3"
             >
-              {item.explanation}
-            </p>
+              <p className="whitespace-pre-line text-sm leading-6 text-ink-soft">
+                {item.explanation}
+              </p>
+              {/* Round 6: that check-in's plan, verbatim -- exactly one of
+                  a ranked action list, an affirmation, or an escalation
+                  signpost, same mutual exclusivity ResultsPage renders for
+                  the current check-in. Nothing here regenerates or
+                  reformats the text. */}
+              {item.recommendations.length > 0 && (
+                <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-ink-soft">
+                  {item.recommendations.map((rec) => (
+                    <li key={rec.priority}>
+                      <span className="font-medium text-ink">{rec.title}:</span>{" "}
+                      {rec.action}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {item.recommendations.length === 0 && item.is_affirmation && item.affirmation && (
+                <p className="mt-3 text-sm leading-6 text-ink-soft">{item.affirmation}</p>
+              )}
+              {item.recommendations.length === 0 &&
+                !item.is_affirmation &&
+                item.is_escalation &&
+                item.escalation_message && (
+                  <p className="mt-3 text-sm leading-6 text-ink-soft">
+                    {item.escalation_message}
+                  </p>
+                )}
+            </div>
           )}
         </>
       )}

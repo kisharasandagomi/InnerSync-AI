@@ -136,6 +136,19 @@ def get_assessment_history(
                 is_escalation=recommendation.is_escalation,
                 top_factor_phrase=top_factor_phrase,
                 explanation=explanation.paragraph,
+                recommendations=[
+                    RecommendationItem(
+                        priority=a["priority"],
+                        title=a["title"],
+                        action=a["action"],
+                        rationale=a["rationale"],
+                        category=a["category"],
+                    )
+                    for a in recommendation.actions
+                ],
+                is_affirmation=recommendation.is_affirmation,
+                affirmation=recommendation.affirmation_text,
+                escalation_message=recommendation.escalation_message,
             )
         )
     return history

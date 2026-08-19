@@ -23,9 +23,17 @@ import { DISCLAIMER_TEXT } from "../services/disclaimer";
  * specifically because it sits on a dark surface (see index.css's token
  * comment on why gold is avoided as text elsewhere).
  */
+const MOOD_PANEL_ROUTES = ["/assessment", "/results", "/progress"];
+
 export function Layout({ children }: { children: ReactNode }) {
   const { isAuthenticated, email, token, signOut } = useAuth();
-  const isChatRoute = useLocation().pathname.startsWith("/chat");
+  const location = useLocation();
+  const isChatRoute = location.pathname.startsWith("/chat");
+  // Round 5: the mood avatar moved out of the nav bar into a left-side
+  // panel, shown only on the pages it's actually relevant to reading --
+  // not on the landing page, chat (which has its own layout and
+  // messaging-focused width), or settings.
+  const showMoodPanel = isAuthenticated && MOOD_PANEL_ROUTES.includes(location.pathname);
 
   // The mood avatar's only data dependency: the most recent check-in's
   // level. Fetched once per sign-in, not per navigation -- decorative, so a
@@ -49,22 +57,19 @@ export function Layout({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+    // Round 6 bug fix: re-fetch on every navigation (location.key), not just
+    // once per token -- see the comment above this effect's declaration.
+  }, [token, location.key]);
 
   return (
     <div className="min-h-full flex flex-col">
       <header className="bg-ink">
         <div className="mx-auto w-full max-w-3xl px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            {isAuthenticated && (
-              <MoodAvatar level={latestLevel} className="h-8 w-8 shrink-0" />
-            )}
-            <div>
-              <p className="text-base font-semibold tracking-tight text-white">
-                InnerSync
-              </p>
-              <p className="text-xs text-white/70">Wellbeing check-in</p>
-            </div>
+          <div>
+            <p className="text-base font-semibold tracking-tight text-white">
+              InnerSync
+            </p>
+            <p className="text-xs text-white/70">Wellbeing check-in</p>
           </div>
           {isAuthenticated && (
             <div className="flex items-center gap-3 text-xs text-white/70">
@@ -79,6 +84,12 @@ export function Layout({ children }: { children: ReactNode }) {
                 className="hidden rounded-md px-2 py-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-accent sm:inline"
               >
                 My Trends
+              </Link>
+              <Link
+                to="/resources"
+                className="hidden rounded-md px-2 py-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-accent sm:inline"
+              >
+                Resources
               </Link>
               <Link
                 to="/settings"
@@ -101,10 +112,26 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <main
         className={`mx-auto w-full flex-1 px-6 py-10 ${
-          isChatRoute ? "max-w-5xl" : "max-w-3xl"
+          isChatRoute ? "max-w-5xl" : showMoodPanel ? "max-w-4xl" : "max-w-3xl"
         }`}
       >
-        {children}
+        {showMoodPanel ? (
+          <div className="flex flex-col gap-8 sm:flex-row sm:items-start">
+            {/* Larger and more present than the old nav icon, but still a
+                static, quiet presence -- no animation, no numbers, no
+                streaks. Same expression logic as before: purely a function
+                of the most recent check-in's level. */}
+            <div className="flex shrink-0 flex-col items-center gap-3 sm:w-40">
+              <MoodAvatar level={latestLevel} className="h-28 w-28" />
+              <p className="text-center text-xs text-ink-faint">
+                Reflects your most recent check-in
+              </p>
+            </div>
+            <div className="min-w-0 flex-1">{children}</div>
+          </div>
+        ) : (
+          children
+        )}
       </main>
 
       <footer className="border-t border-line px-6 py-5">
