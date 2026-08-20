@@ -58,7 +58,7 @@ const STEPS: { title: string; body: string }[] = [
   },
 ];
 
-interface DirectoryEntry {
+export interface DirectoryEntry {
   name: string;
   detail: string;
   lines: string[];
@@ -68,8 +68,10 @@ interface DirectoryEntry {
 // or add numbers here without re-verifying against the organisations'
 // own published contact details. Article A (below) reads its two
 // highlighted numbers directly from this same array rather than retyping
-// them, specifically so the two copies can never drift apart.
-const DIRECTORY: DirectoryEntry[] = [
+// them, specifically so the two copies can never drift apart. Exported
+// (round 7) so SettingsPage's wellbeing signpost reads the same two
+// entries the same way, rather than a third hand-typed copy of the numbers.
+export const DIRECTORY: DirectoryEntry[] = [
   {
     name: "National Mental Health Helpline (NIMH)",
     detail: "",
@@ -103,10 +105,10 @@ const DIRECTORY: DirectoryEntry[] = [
 ];
 
 // Looked up by name rather than fixed array index, so a future reordering
-// of DIRECTORY can't silently point Article A's highlight box at the wrong
-// entry.
-const NIMH_ENTRY = DIRECTORY.find((e) => e.name.includes("NIMH"))!;
-const SUMITHRAYO_ENTRY = DIRECTORY.find((e) => e.name.startsWith("Sri Lanka Sumithrayo"))!;
+// of DIRECTORY can't silently point Article A's highlight box (or, round 7,
+// the profile page's wellbeing signpost) at the wrong entry.
+export const NIMH_ENTRY = DIRECTORY.find((e) => e.name.includes("NIMH"))!;
+export const SUMITHRAYO_ENTRY = DIRECTORY.find((e) => e.name.startsWith("Sri Lanka Sumithrayo"))!;
 
 /** Small abstract, icon-style illustrations for the three round-5 articles.
  *  Inline SVG (the same approach as MoodAvatar.tsx), navy/gold/off-white

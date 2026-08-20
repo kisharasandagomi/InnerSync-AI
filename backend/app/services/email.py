@@ -1,4 +1,6 @@
-"""Transactional email via Resend's HTTP API (round 4: password reset).
+"""Transactional email via Resend's HTTP API (round 4: password reset;
+round 7: login one-time codes -- reuses this same infrastructure rather than
+adding a second email integration).
 
 Uses `urllib.request` from the standard library rather than adding a new
 runtime HTTP dependency -- `httpx` is already in requirements.txt but
@@ -50,6 +52,53 @@ def _require_resend_config() -> tuple[str, str]:
     return key, settings.resend_from_email
 
 
+def _post_to_resend(api_key: str, payload: dict[str, object]) -> None:
+    """Send one request to Resend's `/emails` endpoint.
+
+    Args:
+        api_key: Resend API key.
+        payload: The request body (`from`, `to`, `subject`, `html`).
+
+    Raises:
+        EmailSendError: If Resend rejects the request or is unreachable.
+    """
+    request = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(payload).encode("utf-8"),
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            # Cloudflare (fronting api.resend.com) blocks urllib's default
+            # "Python-urllib/x.y" User-Agent outright with a bot-protection
+            # 403 (Cloudflare error 1010) before the request ever reaches
+            # Resend -- discovered during live verification, where every
+            # send failed with an opaque "HTTP Error 403: Forbidden" that
+            # turned out to have nothing to do with Resend's own API key or
+            # recipient validation. Any ordinary browser-like value avoids
+            # the block; the request is still a plain server-to-server call.
+            "User-Agent": "Mozilla/5.0 (compatible; InnerSyncAI-Backend/1.0)",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            if response.status >= 400:
+                raise EmailSendError(f"Resend returned HTTP {response.status}")
+    except urllib.error.HTTPError as exc:
+        # Surface Resend's own JSON error body (e.g. its `message` field)
+        # rather than just the generic status line -- the previous
+        # str(exc) ("HTTP Error 403: Forbidden") gave no way to tell a
+        # sandbox-recipient restriction apart from a bad API key or the
+        # Cloudflare block above.
+        try:
+            detail = exc.read().decode("utf-8", errors="replace")
+        except Exception:  # pragma: no cover - defensive, body already gone
+            detail = str(exc)
+        raise EmailSendError(f"Resend rejected the request: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise EmailSendError(f"Could not reach Resend: {exc}") from exc
+
+
 def send_password_reset_email(to_email: str, reset_link: str) -> None:
     """Send a password reset email via Resend.
 
@@ -64,7 +113,8 @@ def send_password_reset_email(to_email: str, reset_link: str) -> None:
     """
     api_key, from_email = _require_resend_config()
 
-    body = json.dumps(
+    _post_to_resend(
+        api_key,
         {
             "from": from_email,
             "to": [to_email],
@@ -75,21 +125,38 @@ def send_password_reset_email(to_email: str, reset_link: str) -> None:
                 "This link expires in 45 minutes and can only be used once.</p>"
                 "<p>If you did not request this, you can safely ignore this email.</p>"
             ),
-        }
-    ).encode("utf-8")
-
-    request = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=body,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
         },
     )
-    try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            if response.status >= 400:
-                raise EmailSendError(f"Resend returned HTTP {response.status}")
-    except urllib.error.URLError as exc:
-        raise EmailSendError(f"Could not reach Resend: {exc}") from exc
+
+
+def send_otp_email(to_email: str, code: str) -> None:
+    """Send a login one-time code via Resend (round 7).
+
+    Args:
+        to_email: The recipient's address -- always the account's own,
+            already-verified-by-registration email; this function is only
+            ever called after a correct password on an OTP-enabled account.
+        code: The 6-digit code, plaintext, exactly as generated -- the only
+            place it exists in plaintext outside the request that created it.
+
+    Raises:
+        EmailConfigError: If Resend is not configured.
+        EmailSendError: If Resend's API rejects the request or is unreachable.
+    """
+    api_key, from_email = _require_resend_config()
+
+    _post_to_resend(
+        api_key,
+        {
+            "from": from_email,
+            "to": [to_email],
+            "subject": "Your InnerSync AI sign-in code",
+            "html": (
+                "<p>Use this code to finish signing in to InnerSync AI:</p>"
+                f'<p style="font-size: 28px; font-weight: 600; letter-spacing: 4px;">{code}</p>'
+                "<p>This code expires in 10 minutes and can only be used once.</p>"
+                "<p>If you did not just try to sign in, you can safely ignore this "
+                "email -- your account is still protected by your password.</p>"
+            ),
+        },
+    )

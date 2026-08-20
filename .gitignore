@@ -1,5 +1,13 @@
 # --- Research World data & artifacts (never commit datasets or trained models) ---
-ml_pipeline/datasets/
+# Written as `datasets/*` rather than `datasets/` (same reasoning as artifacts/ below):
+# git does not descend into an excluded directory, so a `!` negation inside one would
+# never match. The large third-party training datasets (student_stress_factors.csv,
+# dreaddit-*.csv) stay ignored via this wildcard; local_validation/ is explicitly
+# un-ignored below because it is small, locally-collected, consented survey data that
+# is normal to include as dissertation supporting evidence, unlike the bulk training data.
+ml_pipeline/datasets/*
+!ml_pipeline/datasets/local_validation/
+!ml_pipeline/datasets/local_validation/**
 
 # Artifacts: ignore the contents (trained model binaries), but keep the small
 # JSON metadata tracked — feature_schema.json is the backend's inference

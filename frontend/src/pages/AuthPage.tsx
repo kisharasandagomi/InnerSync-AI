@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ApiError, forgotPassword, login, register } from "../services/api";
+import { ApiError, forgotPassword, login, register, verifyOtp } from "../services/api";
 import { useAuth } from "../services/auth";
 import { HomeContent } from "../components/HomeContent";
 
-type Mode = "welcome" | "login" | "register" | "forgot";
+type Mode = "welcome" | "login" | "register" | "forgot" | "otp";
 
 /** Combined sign-in / create-account screen. */
 export function AuthPage() {
@@ -16,6 +16,11 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  // Round 7: set once /auth/login responds with otp_required, then carried
+  // through to /auth/login/verify-otp alongside whatever code the student
+  // types in -- see the "otp" mode form below.
+  const [loginToken, setLoginToken] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
 
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -25,50 +30,34 @@ export function AuthPage() {
     setError(null);
     setBusy(true);
     try {
-      if (mode === "welcome") {
-    return (
-      <>
-      <div className="mx-auto max-w-sm text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-ink">
-          Welcome to InnerSync AI
-        </h1>
-        <p className="mt-2 text-base leading-relaxed text-ink-soft">
-          A private space to check in on how you're doing, and get
-          plain-language support tailored to it.
-        </p>
-        <div className="mt-8 flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => setMode("login")}
-            className="w-full rounded-md bg-accent px-4 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("register")}
-            className="w-full rounded-md border border-line px-4 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            Create Account
-          </button>
-        </div>
-      </div>
-      <HomeContent />
-      </>
-    );
-  }
-
-  if (mode === "forgot") {
+      if (mode === "forgot") {
         await forgotPassword(email);
         setForgotSent(true);
+        return;
+      }
+      if (mode === "otp") {
+        if (!loginToken) return;
+        const { access_token, display_name } = await verifyOtp(loginToken, otpCode);
+        signIn(access_token, email, display_name);
+        navigate("/");
         return;
       }
       if (mode === "register") {
         await register(email, password, displayName, hobby);
       }
-      const { access_token, display_name } = await login(email, password);
-      signIn(access_token, email, display_name);
-      navigate("/");
+      const result = await login(email, password);
+      if (result.otp_required && result.login_token) {
+        // Password was correct, but this account has opted into email
+        // codes (round 7) -- not signed in yet, one more step.
+        setLoginToken(result.login_token);
+        setOtpCode("");
+        setMode("otp");
+        return;
+      }
+      if (result.access_token) {
+        signIn(result.access_token, email, result.display_name);
+        navigate("/");
+      }
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -188,6 +177,69 @@ export function AuthPage() {
             </button>
           </>
         )}
+      </div>
+      <HomeContent />
+      </>
+    );
+  }
+
+  if (mode === "otp") {
+    return (
+      <>
+      <div className="mx-auto max-w-sm">
+        <h1 className="text-xl font-semibold tracking-tight text-ink">
+          Enter your sign-in code
+        </h1>
+        <p className="mt-2 text-base leading-relaxed text-ink-soft">
+          We've emailed a 6-digit code to {email}. It expires in 10 minutes.
+        </p>
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
+          <div>
+            <label htmlFor="otp-code" className="block text-base font-medium text-ink">
+              Code
+            </label>
+            <input
+              id="otp-code"
+              name="otp-code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              minLength={6}
+              maxLength={6}
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2 text-center text-lg tracking-[0.5em] text-ink focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              placeholder="000000"
+            />
+          </div>
+
+          {error && (
+            <p role="alert" className="text-base text-danger">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={busy || otpCode.length !== 6}
+            className="w-full rounded-md bg-accent px-4 py-2.5 text-base font-medium text-ink transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          >
+            {busy ? "Checking…" : "Verify and sign in"}
+          </button>
+        </form>
+        <button
+          type="button"
+          onClick={() => {
+            setMode("login");
+            setLoginToken(null);
+            setOtpCode("");
+            setError(null);
+          }}
+          className="mt-4 text-sm font-medium text-ink underline underline-offset-2 hover:text-accent-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          Back to sign in
+        </button>
       </div>
       <HomeContent />
       </>

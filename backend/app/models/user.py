@@ -49,6 +49,12 @@ class User(Base):
         DateTime(timezone=True), nullable=True
     )
 
+    # Opt-in email one-time-code sign-in (round 7). Defaults False so
+    # existing accounts are not disrupted -- login behaves exactly as before
+    # unless a student explicitly turns this on from Settings. See
+    # app.api.auth.login and app.models.otp_code.OtpCode.
+    otp_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     profile: Mapped["UserProfile | None"] = relationship(  # noqa: F821
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )

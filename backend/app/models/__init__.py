@@ -3,6 +3,7 @@
 from app.models.assessment import Assessment
 from app.models.chat_message import ChatMessage
 from app.models.explanation_record import ExplanationRecord
+from app.models.otp_code import OtpCode
 from app.models.password_reset_token import PasswordResetToken
 from app.models.recommendation import Recommendation
 from app.models.user import User
@@ -12,6 +13,7 @@ __all__ = [
     "Assessment",
     "ChatMessage",
     "ExplanationRecord",
+    "OtpCode",
     "PasswordResetToken",
     "Recommendation",
     "User",

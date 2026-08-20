@@ -60,6 +60,65 @@ class DeactivateAccountRequest(BaseModel):
     password: str
 
 
+class UpdateProfileRequest(BaseModel):
+    """Edit-profile payload (round 7): display name only.
+
+    `display_name` may be explicitly set to `None` (or an empty/whitespace
+    string) to clear it — the frontend then falls back to the email's local
+    part everywhere it's shown, via the same `resolve_greeting_name`
+    reasoning used at registration. No password is required here: changing a
+    display name is not a destructive or security-relevant action, unlike
+    deactivation or a password change, both of which do require it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    display_name: str | None = Field(default=None, max_length=80)
+
+
+class ChangePasswordRequest(BaseModel):
+    """Change-password payload for an already-authenticated session (round 7).
+
+    Distinct from `ResetPasswordRequest`: this is "I know my current
+    password and want to set a new one," reached from Settings while signed
+    in, not the forgot/reset-password flow for a locked-out student. Requires
+    the current password, the same confirmation pattern
+    `DeactivateAccountRequest` already uses, so a stolen still-valid access
+    token alone cannot take over the account's credentials.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=72)
+
+
+class UpdateOtpSettingRequest(BaseModel):
+    """Toggle email one-time-code sign-in (round 7). Opt-in, default off —
+    see `app.models.user.User.otp_enabled`'s docstring."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool
+
+
+class MeResponse(BaseModel):
+    """The caller's own current profile (round 7).
+
+    Lets Settings load current `display_name` and `otp_enabled` fresh on
+    mount, rather than only trusting the snapshot carried on `TokenResponse`
+    at the moment of login — a value changed in another tab, or toggled and
+    reloaded, must not appear stale here.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    display_name: str | None = None
+    otp_enabled: bool
+
+
 class ForgotPasswordRequest(BaseModel):
     """Forgot-password payload. Just the email -- the response is identical
     whether or not it belongs to a registered account, so no other input is
@@ -117,6 +176,40 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     display_name: str | None = None
+
+
+class LoginResponse(BaseModel):
+    """`POST /auth/login`'s response (round 7): either a token, or a request
+    for a one-time code.
+
+    A single shape covering both outcomes, rather than two different status
+    codes or response models, so the frontend has one place to branch
+    (`otp_required`) instead of needing to distinguish response shapes by
+    HTTP status. `otp_required=False` (the default, and the only case for
+    every account that hasn't opted in) carries exactly `TokenResponse`'s
+    fields; `otp_required=True` carries only `login_token` — the opaque,
+    single-use value the client must present back to `/auth/login/verify-otp`
+    alongside the emailed code. No `access_token` is ever present when
+    `otp_required` is True: the password alone is explicitly not sufficient
+    to authenticate an OTP-enabled account.
+    """
+
+    otp_required: bool = False
+    login_token: str | None = None
+
+    access_token: str | None = None
+    token_type: str = "bearer"
+    display_name: str | None = None
+
+
+class VerifyOtpRequest(BaseModel):
+    """Second step of an OTP-gated login: the `login_token` from
+    `LoginResponse` plus the code emailed to the account."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    login_token: str
+    code: str = Field(min_length=6, max_length=6)
 
 
 def resolve_greeting_name(display_name: str | None, email: str) -> str:

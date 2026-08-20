@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import {
   ApiError,
   getAssessmentHistory,
+  getDevelopmentSummary,
   type AssessmentHistoryItem,
+  type DevelopmentSummaryResponse,
 } from "../services/api";
+import { canDownloadSummaryReport, downloadSummaryReport } from "../services/pdfReport";
 import { useAuth } from "../services/auth";
 
 /**
@@ -36,6 +39,11 @@ export function ProgressPage() {
   const { token } = useAuth();
   const [history, setHistory] = useState<AssessmentHistoryItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Round 7: fetched independently of `history` (its own endpoint,
+  // GET /assessments/summary) rather than derived from `history` here on
+  // the frontend, so the aggregation stays server-side, template-based, and
+  // safety-gate-validated -- see app.services.development_summary.
+  const [devSummary, setDevSummary] = useState<DevelopmentSummaryResponse | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -51,6 +59,15 @@ export function ProgressPage() {
             ? err.message
             : "Could not reach the server. Is the backend running?",
         );
+      });
+    getDevelopmentSummary(token)
+      .then((result) => {
+        if (!cancelled) setDevSummary(result);
+      })
+      .catch(() => {
+        // Non-critical: the rest of the page (trend graph, check-in list)
+        // still works without the aggregated summary, so a failure here
+        // does not set the page-level error state.
       });
     return () => {
       cancelled = true;
@@ -76,12 +93,20 @@ export function ProgressPage() {
         <p className="mt-6 text-sm text-ink-faint">Loading your check-ins…</p>
       )}
 
-      {!error && history !== null && <ProgressBody history={history} />}
+      {!error && history !== null && (
+        <ProgressBody history={history} devSummary={devSummary} />
+      )}
     </div>
   );
 }
 
-function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
+function ProgressBody({
+  history,
+  devSummary,
+}: {
+  history: AssessmentHistoryItem[];
+  devSummary: DevelopmentSummaryResponse | null;
+}) {
   if (history.length === 0) {
     return (
       <section className="mt-6 rounded-lg border border-line bg-card p-6">
@@ -163,6 +188,10 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
         </div>
       </section>
 
+      {devSummary && devSummary.checkins_considered >= 2 && (
+        <DevelopmentSummarySection summary={devSummary} history={history} />
+      )}
+
       <section className="mt-8">
         <h2 className="text-sm font-semibold tracking-tight text-ink">
           Check-in by check-in
@@ -174,6 +203,55 @@ function ProgressBody({ history }: { history: AssessmentHistoryItem[] }) {
         </ol>
       </section>
     </>
+  );
+}
+
+/**
+ * Round 7: aggregated, plain-language pattern summary across the student's
+ * most recent check-ins, from `GET /assessments/summary`. Every string here
+ * is rendered verbatim -- `summary_sentence` and `closing_message` are both
+ * already template-based and safety-gate-validated server-side (see
+ * `app.services.development_summary`), the same discipline as
+ * `top_factor_phrase` and `explanation` elsewhere on this page.
+ *
+ * Round 8: a "Download PDF" button for this same content, gated on the
+ * caller's full check-in count (not `summary.checkins_considered`, which
+ * caps at the 5-check-in summary window and would stay stuck at showing the
+ * gate note forever for a student with 6+ check-ins but only 2 within the
+ * window). Below the 3-check-in minimum this renders an explanatory note
+ * instead of a disabled button, since a disabled control here would invite
+ * clicking it to find out why nothing happens.
+ */
+function DevelopmentSummarySection({
+  summary,
+  history,
+}: {
+  summary: DevelopmentSummaryResponse;
+  history: AssessmentHistoryItem[];
+}) {
+  const canDownload = canDownloadSummaryReport(history);
+  return (
+    <section className="mt-6 rounded-lg border border-line bg-card p-6">
+      <h2 className="text-sm font-semibold tracking-tight text-ink">
+        Since your last few check-ins
+      </h2>
+      <p className="mt-2 text-base leading-7 text-ink">{summary.summary_sentence}</p>
+      <p className="mt-3 text-sm leading-6 text-ink-soft">{summary.closing_message}</p>
+
+      {canDownload ? (
+        <button
+          type="button"
+          onClick={() => downloadSummaryReport(history, summary)}
+          className="mt-4 rounded-md border border-line px-4 py-2 text-sm text-ink-soft transition-colors hover:bg-accent-soft hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          Download summary PDF
+        </button>
+      ) : (
+        <p className="mt-4 text-sm text-ink-faint">
+          A downloadable summary PDF becomes available after your 3rd check-in.
+        </p>
+      )}
+    </section>
   );
 }
 

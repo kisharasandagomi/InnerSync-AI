@@ -1,0 +1,91 @@
+{
+  "timestamp_utc": "20260819T063036Z",
+  "experiment_name": "phase8_survey_analysis",
+  "model": "descriptive_analysis_no_model_trained",
+  "hyperparameters": {
+    "sus_scoring": {
+      "items_used": 9,
+      "items_excluded": 1,
+      "excluded_item": "I think that I would need the support of a technical person to be able to use this system.",
+      "multiplier": 2.7777777777777777,
+      "standard_sus_multiplier_for_comparison": 2.5
+    }
+  },
+  "dataset": {
+    "path": "/home/hp/projects/InnerSync-AI/docs/research/phase8_evaluation/survey_part1.csv",
+    "sha256": "99b31a96a5d0d5040339217a662dc62b8e481a5e45c9b95c143c6b3f4975d835"
+  },
+  "split": {
+    "note": "no train/test split; full-sample survey analysis across two linked exports",
+    "part1_path": "/home/hp/projects/InnerSync-AI/docs/research/phase8_evaluation/survey_part1.csv",
+    "part2_path": "/home/hp/projects/InnerSync-AI/docs/research/phase8_evaluation/survey_part2_followup.csv",
+    "part2_sha256": "aa31bf2edbc02ba2024d1d6ebd303922013219c3c8b62308efc4025ca02844da"
+  },
+  "metrics": {
+    "n_part1": 7,
+    "n_part2": 7,
+    "sus": {
+      "n_items": 9,
+      "multiplier": 2.777778,
+      "per_respondent": [
+        80.56,
+        86.11,
+        77.78,
+        86.11,
+        72.22,
+        83.33,
+        77.78
+      ],
+      "mean": 80.6,
+      "median": 80.6,
+      "std": 5.07,
+      "min": 72.2,
+      "max": 86.1
+    },
+    "sus_excluded_technical_support_item": {
+      "mean_1_to_5": 1.0,
+      "distribution": {
+        "1": 7
+      },
+      "note": "1 = strongly disagree they would need technical support (most usable end)"
+    },
+    "explanation_usefulness": {
+      "pooled_mean": 4.14,
+      "pooled_median": 4.0,
+      "n_values": 35,
+      "per_item_mean": {
+        "The explanation I received was easy to understand.": 4.43,
+        "The explanation avoided confusing technical or clinical language.": 4.14,
+        "The explanation felt like it genuinely reflected my situation.": 3.71,
+        "I trust that the explanation was based on my actual answers, not generic text.": 4.14,
+        "The explanation felt supportive rather than alarming or judgmental.": 4.29
+      }
+    },
+    "chatbot_usefulness": {
+      "pooled_mean": 3.77,
+      "pooled_median": 4.0,
+      "n_values": 13,
+      "per_item_mean": {
+        "The chatbot felt supportive and easy to talk to.": 4.0,
+        "The chatbot made it clear it wasn't a substitute for professional support.": 3.5
+      }
+    },
+    "recommendation_usefulness": {
+      "pooled_mean": 3.93,
+      "pooled_median": 4.0,
+      "n_values": 27,
+      "per_item_mean": {
+        "The suggestions I received felt relevant to what's actually affecting me.": 3.71,
+        "The suggestions felt specific and actionable, not generic advice.": 4.0,
+        "I would consider actually trying at least one of the suggestions.": 4.67,
+        "The number of suggestions felt appropriate (not overwhelming, not too few).": 3.43
+      }
+    },
+    "overall_rating_1_to_5": {
+      "mean": 5.0,
+      "distribution": {
+        "5": 7
+      }
+    }
+  }
+}

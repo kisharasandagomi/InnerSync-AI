@@ -105,6 +105,22 @@ def generate_reset_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def generate_otp_code() -> str:
+    """Generate a 6-digit numeric login one-time code (round 7).
+
+    Uses `secrets.randbelow`, not `random`, for the same reason
+    `generate_reset_token` uses `secrets.token_urlsafe` -- this value gates a
+    real login and must not be predictable. Zero-padded so every code is
+    exactly 6 digits, including e.g. `"004821"`.
+
+    Returns:
+        A 6-character numeric string. Only its hash (see `hash_reset_token`,
+        reused here -- both are single-use, short-lived, high-entropy-enough
+        values hashed the same way) is ever persisted.
+    """
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
 def hash_reset_token(token: str) -> str:
     """Hash a reset token for storage/lookup.
 

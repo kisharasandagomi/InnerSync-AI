@@ -1,0 +1,136 @@
+{
+  "timestamp_utc": "20260819T062906Z",
+  "experiment_name": "local_data_triangulation",
+  "model": "descriptive_analysis_no_model_trained",
+  "hyperparameters": {
+    "factor_domain_coding_scheme": {
+      "Research and supervision": "academic",
+      "Overload content of some subjects": "academic",
+      "Academic workload": "academic",
+      "Assignment deadlines": "academic",
+      "Examination pressure": "academic",
+      "Financial responsibility": "environmental",
+      "Balancing responsibilities": "environmental",
+      "Multiple responsibilities": "environmental",
+      "Family expectations": "social",
+      "Poor sleep": "physiological",
+      "Career uncertainty": "psychological",
+      "Career and internship uncertainty": "psychological",
+      "No major factor": "not_represented",
+      "Personal problems": "not_represented"
+    },
+    "challenge_domain_coding_scheme": {
+      "Academic difficulties": "academic",
+      "Financial concerns": "environmental",
+      "Relationship issues": "social",
+      "Family-related issues": "social",
+      "No major challenges": "not_represented",
+      "Other": "not_represented"
+    }
+  },
+  "dataset": {
+    "path": "/home/hp/projects/InnerSync-AI/ml_pipeline/datasets/local_validation/student_responses.csv",
+    "sha256": "d1ce48b1318612a22729be262283f6de8194c58ca4b2fdf288e95a2b3b66148e"
+  },
+  "split": {
+    "note": "no train/test split; full-sample descriptive analysis",
+    "n": 31
+  },
+  "metrics": {
+    "descriptive_statistics": {
+      "n": 31,
+      "age_group": {
+        "21\u201323": 26,
+        "24\u201326": 2,
+        "18\u201320": 2,
+        "Above 26": 1
+      },
+      "gender": {
+        "Male": 21,
+        "Female": 10
+      },
+      "year_of_study": {
+        "Year 3": 15,
+        "Year 4": 12,
+        "Year 2": 2,
+        "Postgraduate": 1,
+        "Year 1": 1
+      },
+      "study_hours_per_day": {
+        "More than 5 hours": 14,
+        "1\u20133 hours": 10,
+        "Less than 1 hour": 4,
+        "3\u20135 hours": 3
+      },
+      "sleep_hours_per_night": {
+        "4\u20136 hours": 11,
+        "missing": 10,
+        "Less than 4 hours": 5,
+        "6\u20138 hours": 5
+      },
+      "sleep_quality_1_to_5": {
+        "mean": 2.871,
+        "distribution": {
+          "2": 14,
+          "4": 8,
+          "3": 8,
+          "5": 1
+        }
+      },
+      "exercise_frequency": {
+        "1\u20132 times per week": 19,
+        "Rarely": 6,
+        "3\u20135 times per week": 3,
+        "Never": 2,
+        "Daily": 1
+      }
+    },
+    "thematic_comparison": {
+      "n": 31,
+      "biggest_factor_free_text": {
+        "Academic": {
+          "count": 18,
+          "pct": 58.1
+        },
+        "Physiological / Not represented": {
+          "count": 7,
+          "pct": 22.6
+        },
+        "Environmental": {
+          "count": 3,
+          "pct": 9.7
+        },
+        "Psychological": {
+          "count": 2,
+          "pct": 6.5
+        },
+        "Social": {
+          "count": 1,
+          "pct": 3.2
+        }
+      },
+      "major_challenges_categorical": {
+        "Academic": {
+          "count": 18,
+          "pct": 58.1
+        },
+        "Physiological / Not represented": {
+          "count": 5,
+          "pct": 16.1
+        },
+        "Environmental": {
+          "count": 4,
+          "pct": 12.9
+        },
+        "Social": {
+          "count": 4,
+          "pct": 12.9
+        }
+      },
+      "row_wise_agreement": {
+        "agreeing_respondents": 20,
+        "pct": 64.5
+      }
+    }
+  }
+}

@@ -84,6 +84,58 @@ export interface AssessmentHistoryItem {
   is_affirmation: boolean;
   affirmation: string | null;
   escalation_message: string | null;
+  /**
+   * Round 7: "improved" | "same" | "worse" comparing this check-in to the
+   * one before it, or null for a genuine first-ever check-in. The stored
+   * value behind round 3's `comparative_trend_message`, exposed per-item
+   * here for the first time so the development summary can aggregate it
+   * without recomputing anything.
+   */
+  comparative_trend_outcome: "improved" | "same" | "worse" | null;
+}
+
+/**
+ * The caller's own current profile — see `GET /auth/me` (round 7).
+ */
+export interface MeResponse {
+  id: number;
+  email: string;
+  display_name: string | null;
+  otp_enabled: boolean;
+}
+
+/**
+ * `POST /auth/login`'s response (round 7): either a token directly (the
+ * default, for every account that hasn't opted into OTP), or a request for
+ * a one-time code. See `backend/app/schemas/auth.py`'s `LoginResponse`.
+ */
+export interface LoginResponse {
+  otp_required: boolean;
+  login_token: string | null;
+  access_token: string | null;
+  token_type: string;
+  display_name: string | null;
+}
+
+/** Aggregated, plain-language pattern summary — see `GET /assessments/summary` (round 7). */
+export interface DevelopmentSummaryResponse {
+  checkins_considered: number;
+  most_frequent_factor_label: string | null;
+  most_frequent_factor_count: number;
+  engaged_count: number;
+  engaged_considered: number;
+  summary_sentence: string;
+  closing_message: string;
+}
+
+/**
+ * Whether the profile page's persistent wellbeing signpost should show —
+ * see `GET /assessments/escalation-status` (round 7). A direct read of the
+ * caller's most recent check-in's own `is_escalation` flag, not a fresh
+ * calculation.
+ */
+export interface EscalationStatusResponse {
+  is_escalation: boolean;
 }
 
 export class ApiError extends Error {
@@ -191,10 +243,62 @@ export function resetPassword(token: string, newPassword: string) {
   );
 }
 
+/**
+ * Exchange credentials for either an access token, or a request for a
+ * one-time code (round 7) -- check `otp_required` on the result before
+ * treating `access_token` as present. See `AuthPage.tsx`'s login handling.
+ */
 export function login(email: string, password: string) {
-  return request<{ access_token: string; token_type: string; display_name: string | null }>(
+  return request<LoginResponse>(
     "/auth/login",
     { method: "POST", body: JSON.stringify({ email, password }) },
+  );
+}
+
+/** Second step of an OTP-gated login: the code emailed to the account. */
+export function verifyOtp(loginToken: string, code: string) {
+  return request<{ access_token: string; token_type: string; display_name: string | null }>(
+    "/auth/login/verify-otp",
+    { method: "POST", body: JSON.stringify({ login_token: loginToken, code }) },
+  );
+}
+
+/** The caller's own current profile, fresh from the database. */
+export function getMe(token: string) {
+  return request<MeResponse>("/auth/me", { method: "GET" }, token);
+}
+
+/** Update the caller's own display name. Pass `null`/blank to clear it. */
+export function updateDisplayName(displayName: string | null, token: string) {
+  return request<MeResponse>(
+    "/auth/profile",
+    { method: "PATCH", body: JSON.stringify({ display_name: displayName }) },
+    token,
+  );
+}
+
+/**
+ * Change the caller's own password while signed in -- distinct from
+ * `resetPassword`'s forgot-password flow: this requires the current
+ * password, standard practice for an in-session credential change.
+ */
+export function changePassword(currentPassword: string, newPassword: string, token: string) {
+  return request<void>(
+    "/auth/change-password",
+    {
+      method: "POST",
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    },
+    token,
+  );
+}
+
+/** Turn email one-time-code sign-in on or off. Opt-in; default off. */
+export function updateOtpSetting(enabled: boolean, token: string) {
+  return request<MeResponse>(
+    "/auth/otp-setting",
+    { method: "PATCH", body: JSON.stringify({ enabled }) },
+    token,
   );
 }
 
@@ -220,6 +324,34 @@ export function submitAssessment(
 export function getAssessmentHistory(token: string) {
   return request<AssessmentHistoryItem[]>(
     "/assessments/history",
+    { method: "GET" },
+    token,
+  );
+}
+
+/**
+ * Aggregated, plain-language summary across the caller's most recent
+ * check-ins (round 7). Read-only, entirely server-computed and
+ * safety-gate-validated -- see `app.services.development_summary`.
+ */
+export function getDevelopmentSummary(token: string) {
+  return request<DevelopmentSummaryResponse>(
+    "/assessments/summary",
+    { method: "GET" },
+    token,
+  );
+}
+
+/**
+ * Whether the caller's most recent check-in is a sustained-high-stress
+ * escalation (round 7) -- powers the profile page's persistent wellbeing
+ * signpost. Read-only; reflects `Recommendation.is_escalation` exactly as
+ * already computed by the Adaptive Recovery Framework, never recalculated
+ * here.
+ */
+export function getEscalationStatus(token: string) {
+  return request<EscalationStatusResponse>(
+    "/assessments/escalation-status",
     { method: "GET" },
     token,
   );

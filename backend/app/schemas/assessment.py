@@ -144,6 +144,16 @@ class AssessmentHistoryItem(BaseModel):
         description="Whether the Adaptive Recovery Framework altered this check-in's plan"
     )
     is_escalation: bool
+    comparative_trend_outcome: str | None = Field(
+        default=None,
+        description=(
+            "'improved' | 'same' | 'worse', comparing this check-in to the one "
+            "immediately before it, or null for a genuine first-ever check-in. "
+            "The stored `Recommendation.comparative_trend_outcome` value (round "
+            "3) exposed here for the first time (round 7's development summary) "
+            "-- already computed and persisted, not derived fresh."
+        ),
+    )
 
     top_factor_phrase: str | None = Field(
         default=None,
@@ -176,4 +186,52 @@ class AssessmentHistoryItem(BaseModel):
     escalation_message: str | None = Field(
         default=None,
         description="This check-in's wellbeing-service signpost text, verbatim, if is_escalation",
+    )
+
+
+class DevelopmentSummaryResponse(BaseModel):
+    """`GET /assessments/summary`'s response (round 7): an aggregated,
+    plain-language read across a student's most recent check-ins.
+
+    See `app.services.development_summary` for how this is built — entirely
+    from data already persisted by earlier rounds, template-based, and
+    safety-gate-validated before being returned.
+    """
+
+    checkins_considered: int = Field(
+        description="How many of the most recent check-ins this summary is based on"
+    )
+    most_frequent_factor_label: str | None = Field(
+        default=None,
+        description="Plain-language label for the most frequently recurring factor, if any",
+    )
+    most_frequent_factor_count: int = Field(
+        default=0,
+        description="How many of the considered check-ins had that factor as their top driver",
+    )
+    engaged_count: int
+    engaged_considered: int
+    summary_sentence: str = Field(description="The synthesised summary sentence, verbatim")
+    closing_message: str = Field(description="A warm closing note, verbatim")
+
+
+class EscalationStatusResponse(BaseModel):
+    """`GET /assessments/escalation-status`'s response (round 7): whether the
+    profile page's persistent wellbeing signpost should currently show.
+
+    A single boolean read straight off the caller's own most recent
+    check-in's already-computed `Recommendation.is_escalation` — no new
+    severity calculation, per `docs/decisions/ADR.md` ADR-004's reasoning
+    for keeping this kind of live, per-user status in `backend/`. Kept as
+    its own tiny endpoint (rather than reusing the full `/assessments/history`
+    response the Progress page already calls) so the Settings page mounts a
+    request whose entire payload is the one field it actually needs.
+    """
+
+    is_escalation: bool = Field(
+        description=(
+            "True when the caller's most recent check-in is an escalation "
+            "(sustained high stress). False for no check-ins yet, or when a "
+            "later check-in no longer escalates."
+        )
     )

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import (
     create_access_token,
+    generate_otp_code,
     generate_reset_token,
     hash_password,
     hash_reset_token,
@@ -16,20 +17,32 @@ from app.core.security import (
 )
 from app.api.deps import get_current_user
 from app.core.config import get_settings
+from app.models.otp_code import OtpCode
 from app.models.password_reset_token import PasswordResetToken
-from app.services.email import EmailConfigError, EmailSendError, send_password_reset_email
+from app.services.email import (
+    EmailConfigError,
+    EmailSendError,
+    send_otp_email,
+    send_password_reset_email,
+)
 from app.database.session import get_db
 from app.models.user import User
 from app.models.user_profile import UserProfile
 from app.schemas.auth import (
+    ChangePasswordRequest,
     DeactivateAccountRequest,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
+    LoginResponse,
+    MeResponse,
     ResetPasswordRequest,
     TokenResponse,
+    UpdateOtpSettingRequest,
+    UpdateProfileRequest,
     UserLoginRequest,
     UserRegisterRequest,
     UserResponse,
+    VerifyOtpRequest,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -73,16 +86,36 @@ def register(payload: UserRegisterRequest, db: Session = Depends(get_db)) -> Use
     return user
 
 
-@router.post("/login", response_model=TokenResponse)
-def login(payload: UserLoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    """Exchange credentials for an access token.
+# Login OTP: short-lived, single-use -- long enough to reach the inbox,
+# short enough to bound exposure if the email is somehow intercepted. Same
+# reasoning as RESET_TOKEN_LIFETIME_MINUTES below, just a tighter window
+# appropriate to a code typed back immediately rather than a clicked link.
+LOGIN_OTP_LIFETIME_MINUTES = 10
+
+# A 6-digit code has 1,000,000 possibilities -- guessable within the
+# 10-minute window if attempts were unbounded. Capping wrong guesses at 5
+# per issued code, then requiring a fresh sign-in (a fresh code), keeps the
+# effective search space per code at 5 rather than 1,000,000.
+MAX_OTP_ATTEMPTS = 5
+
+
+@router.post("/login", response_model=LoginResponse)
+def login(payload: UserLoginRequest, db: Session = Depends(get_db)) -> LoginResponse:
+    """Exchange credentials for an access token, or a request for a one-time code.
 
     Args:
         payload: Email and password.
         db: Database session.
 
     Returns:
-        A signed access token.
+        `LoginResponse` with `access_token` set directly, for the large
+        majority of accounts that have not opted into OTP (round 7); or,
+        for an OTP-enabled account, `otp_required=True` and a `login_token`
+        to present to `/auth/login/verify-otp` alongside the code just
+        emailed to the account. Fails open toward the *existing* behaviour
+        on any OTP-send problem -- see the inline comment below -- rather
+        than locking a student out of their own account because Resend is
+        briefly unavailable.
 
     Raises:
         HTTPException: 401 if the email is unknown or the password is wrong.
@@ -103,6 +136,110 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)) -> TokenResp
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
+
+    if not user.otp_enabled:
+        return LoginResponse(
+            access_token=create_access_token(subject=str(user.id)),
+            display_name=user.display_name,
+        )
+
+    # OTP-enabled: the password alone is correct but not sufficient. Issue a
+    # code and a login_token identifying this pending login, the same
+    # single-use-hash-only pattern as PasswordResetToken.
+    raw_login_token = generate_reset_token()
+    code = generate_otp_code()
+    now = datetime.now(timezone.utc)
+    db.add(
+        OtpCode(
+            user_id=user.id,
+            login_token_hash=hash_reset_token(raw_login_token),
+            code_hash=hash_reset_token(code),
+            created_at=now,
+            expires_at=now + timedelta(minutes=LOGIN_OTP_LIFETIME_MINUTES),
+        )
+    )
+    db.commit()
+
+    try:
+        send_otp_email(user.email, code)
+    except (EmailConfigError, EmailSendError) as exc:
+        # A student who opted into OTP must not be locked out of their own
+        # account because Resend is misconfigured or briefly unavailable --
+        # that would turn a security feature into an outage. Surface this
+        # loudly as a 503 (a deployment/operational problem, matching
+        # forgot_password's treatment of the same failure mode) rather than
+        # silently falling back to password-only, which would make OTP
+        # appear enabled while providing no actual second factor.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Could not send your sign-in code. {exc}",
+        ) from exc
+
+    return LoginResponse(otp_required=True, login_token=raw_login_token)
+
+
+@router.post("/login/verify-otp", response_model=TokenResponse)
+def verify_otp(payload: VerifyOtpRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    """Complete an OTP-gated login given the emailed code.
+
+    Args:
+        payload: The `login_token` from `LoginResponse` plus the code.
+        db: Database session.
+
+    Returns:
+        A signed access token, exactly as a non-OTP login would return.
+
+    Raises:
+        HTTPException: 400 if the login_token is unknown, already used,
+            expired, or has hit its attempt cap, or the code does not
+            match. One message covers all cases so a caller cannot
+            distinguish which -- the same discipline `reset_password`
+            already applies to its own token, and important here
+            specifically so a wrong code cannot be distinguished from an
+            expired or exhausted session by trial and error.
+    """
+    invalid = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="That code is invalid or has expired. Please sign in again.",
+    )
+
+    otp_row = (
+        db.query(OtpCode)
+        .filter(OtpCode.login_token_hash == hash_reset_token(payload.login_token))
+        .one_or_none()
+    )
+    if otp_row is None or otp_row.used_at is not None:
+        raise invalid
+
+    if otp_row.attempts >= MAX_OTP_ATTEMPTS:
+        raise invalid
+
+    now = datetime.now(timezone.utc)
+    expires_at = otp_row.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < now:
+        raise invalid
+
+    if otp_row.code_hash != hash_reset_token(payload.code):
+        # Count the wrong guess against this row's cap, and invalidate the
+        # row outright once the cap is reached -- rather than only rejecting
+        # once attempts already equals the cap on some later request -- so a
+        # student who exhausts their attempts must request a brand new code
+        # rather than being left able to notice the boundary and probe it.
+        otp_row.attempts += 1
+        if otp_row.attempts >= MAX_OTP_ATTEMPTS:
+            otp_row.used_at = now
+        db.commit()
+        raise invalid
+
+    user = db.get(User, otp_row.user_id)
+    if user is None or not user.is_active:
+        raise invalid
+
+    otp_row.used_at = now
+    db.commit()
+
     return TokenResponse(
         access_token=create_access_token(subject=str(user.id)),
         display_name=user.display_name,
@@ -144,6 +281,98 @@ def deactivate_account(
     current_user.is_active = False
     current_user.deactivated_at = datetime.now(timezone.utc)
     db.commit()
+
+
+@router.get("/me", response_model=MeResponse)
+def get_me(current_user: User = Depends(get_current_user)) -> User:
+    """Return the caller's own current profile (round 7).
+
+    Args:
+        current_user: The authenticated caller.
+
+    Returns:
+        Their id, email, current display name, and OTP setting -- fresh
+        from the database, not a snapshot from login. Powers Settings'
+        edit-profile and two-factor sections on mount.
+    """
+    return current_user
+
+
+@router.patch("/profile", response_model=UserResponse)
+def update_profile(
+    payload: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """Update the caller's own display name (round 7).
+
+    Args:
+        payload: The new display name, or `None`/blank to clear it.
+        current_user: The authenticated caller.
+        db: Database session.
+
+    Returns:
+        The updated user.
+    """
+    display_name = payload.display_name.strip() if payload.display_name else None
+    current_user.display_name = display_name or None
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    """Change the caller's own password while signed in (round 7).
+
+    Distinct from the forgot/reset-password flow: this requires knowing the
+    *current* password, standard practice for an in-session credential
+    change -- see `ChangePasswordRequest`'s docstring.
+
+    Args:
+        payload: The current password (for confirmation) and the new one.
+        current_user: The authenticated caller.
+        db: Database session.
+
+    Returns:
+        Nothing (204).
+
+    Raises:
+        HTTPException: 401 if `current_password` does not match.
+    """
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect current password",
+        )
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+
+
+@router.patch("/otp-setting", response_model=MeResponse)
+def update_otp_setting(
+    payload: UpdateOtpSettingRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """Turn email one-time-code sign-in on or off for the caller's own account.
+
+    Args:
+        payload: The desired setting.
+        current_user: The authenticated caller.
+        db: Database session.
+
+    Returns:
+        The caller's current profile, reflecting the new setting.
+    """
+    current_user.otp_enabled = payload.enabled
+    db.commit()
+    db.refresh(current_user)
+    return current_user
 
 
 # Single-use, expires in under an hour -- long enough for a student to reach
